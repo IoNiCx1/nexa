@@ -1,0 +1,7 @@
+/home/kali/nexa/build/CMakeFiles/intrinsics_gen.dir
+/home/kali/nexa/build/CMakeFiles/omp_gen.dir
+/home/kali/nexa/build/CMakeFiles/acc_gen.dir
+/home/kali/nexa/build/CMakeFiles/RISCVTargetParserTableGen.dir
+/home/kali/nexa/build/CMakeFiles/nexa.dir
+/home/kali/nexa/build/CMakeFiles/edit_cache.dir
+/home/kali/nexa/build/CMakeFiles/rebuild_cache.dir

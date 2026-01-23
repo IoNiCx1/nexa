@@ -1,0 +1,14 @@
+# Build artifacts
+build/
+*.o
+*.out
+*.exe
+
+# LLVM / Clang
+*.ll
+*.bc
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
