@@ -5,6 +5,7 @@
 class Lexer {
 public:
     explicit Lexer(const std::string& source);
+
     Token nextToken();
 
 private:
@@ -13,13 +14,7 @@ private:
     int line = 1;
     int column = 1;
 
-    char peek(int offset = 0) const;
+    char peek() const;
     char advance();
     void skipWhitespace();
-
-    Token makeToken(TokenKind kind, const std::string& lexeme);
-    Token identifierOrKeyword();
-    Token numberLiteral();
-    Token stringLiteral();
-    Token charLiteral();
 };

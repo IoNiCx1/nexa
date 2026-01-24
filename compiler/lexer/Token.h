@@ -2,31 +2,19 @@
 #include <string>
 
 enum class TokenKind {
-    // Type symbols
-    TYPE_I32_OPEN,     // <
-    TYPE_I32_CLOSE,    // >
-    TYPE_I64_OPEN,     // <<
-    TYPE_I64_CLOSE,    // >>
-    TYPE_CHAR_OPEN,    // {
-    TYPE_CHAR_CLOSE,   // }
-    TYPE_STRING_OPEN,  // {{
-    TYPE_STRING_CLOSE, // }}
-    TYPE_BOOL,         // /
+    // Identifiers & literals
+    Identifier,
+    Number,
+    String,
 
-    // Literals
-    IDENTIFIER,
-    INT_LITERAL,
-    FLOAT_LITERAL,
-    STRING_LITERAL,
-    CHAR_LITERAL,
-    BOOL_LITERAL,
+    // Symbols
+    Comma,      // ,
+    Assign,     // =
+    LAngle,     // <
+    RAngle,     // >
 
-    // Operators / punctuation
-    ASSIGN,    // =
-    COMMA,     // ,
-
-    END_OF_FILE,
-    INVALID
+    // End of file
+    End
 };
 
 struct Token {

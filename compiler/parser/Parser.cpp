@@ -2,42 +2,46 @@
 #include <stdexcept>
 
 /* =========================
-   Utility
+   Constructor
    ========================= */
 
-Token Parser::peek() const {
-    return tokens[current];
+Parser::Parser(Lexer& lexer)
+    : lexer(lexer) {
+    advance();
 }
 
-Token Parser::advance() {
-    return tokens[current++];
+/* =========================
+   Utilities
+   ========================= */
+
+void Parser::advance() {
+    current = lexer.nextToken();
 }
 
-bool Parser::match(TokenType type) {
-    if (peek().type == type) {
+bool Parser::match(TokenKind kind) {
+    if (current.kind == kind) {
         advance();
         return true;
     }
     return false;
 }
 
-Token Parser::expect(TokenType type) {
-    if (peek().type != type) {
-        throw std::runtime_error(
-            "Expected '" + tokenTypeToString(type) + "'");
+void Parser::expect(TokenKind kind, const char* msg) {
+    if (current.kind != kind) {
+        throw std::runtime_error(msg);
     }
-    return advance();
+    advance();
 }
 
 /* =========================
    Entry
    ========================= */
 
-Program Parser::parse() {
-    Program program;
+std::unique_ptr<Program> Parser::parseProgram() {
+    auto program = std::make_unique<Program>();
 
-    while (peek().type != TokenType::EOFToken) {
-        parseDeclaration(program);
+    while (current.kind != TokenKind::End) {
+        program->statements.push_back(parseDeclaration());
     }
 
     return program;
@@ -47,60 +51,45 @@ Program Parser::parse() {
    Declarations
    ========================= */
 
-void Parser::parseDeclaration(Program& program) {
-    TypeSpec type = parseTypeSpec();
-
-    std::vector<std::string> names = parseIdentifierList();
-
-    expect(TokenType::Equal);
-
-    std::vector<std::unique_ptr<Expr>> values;
-    do {
-        values.push_back(parseExpression());
-    } while (match(TokenType::Comma));
-
-    if (names.size() != values.size()) {
-        throw std::runtime_error(
-            "Variable count does not match value count");
-    }
-
+std::unique_ptr<Declaration> Parser::parseDeclaration() {
     auto decl = std::make_unique<Declaration>();
-    decl->type = type;
-    decl->names = std::move(names);
-    decl->values = std::move(values);
 
-    program.statements.push_back(std::move(decl));
-}
+    decl->type = parseType();
 
-/* =========================
-   Type Spec
-   ========================= */
-
-TypeSpec Parser::parseTypeSpec() {
-    expect(TokenType::Less);
-
-    TypeSpec spec;
-    spec.kind = TypeKind::Int; // default scalar
-    spec.rows = 1;
-    spec.cols = 1;
-
-    return spec;
-}
-
-/* =========================
-   Identifier List
-   ========================= */
-
-std::vector<std::string> Parser::parseIdentifierList() {
-    std::vector<std::string> names;
-
+    // <a,b,c>
     do {
-        Token id = expect(TokenType::Identifier);
-        names.push_back(id.lexeme);
-    } while (match(TokenType::Comma));
+        if (current.kind != TokenKind::Identifier) {
+            throw std::runtime_error("Expected identifier");
+        }
+        decl->names.push_back(current.lexeme);
+        advance();
+    } while (match(TokenKind::Comma));
 
-    expect(TokenType::Greater);
-    return names;
+    expect(TokenKind::Assign, "Expected '='");
+
+    // 1,2,3
+    do {
+        decl->values.push_back(parseExpression());
+    } while (match(TokenKind::Comma));
+
+    return decl;
+}
+
+/* =========================
+   Type
+   ========================= */
+
+TypeSpec Parser::parseType() {
+    TypeSpec type;
+
+    expect(TokenKind::LAngle, "Expected '<'");
+
+    // scalar / vector inferred later
+    type.kind = TypeKind::Scalar;
+
+    expect(TokenKind::RAngle, "Expected '>'");
+
+    return type;
 }
 
 /* =========================
@@ -108,11 +97,10 @@ std::vector<std::string> Parser::parseIdentifierList() {
    ========================= */
 
 std::unique_ptr<Expr> Parser::parseExpression() {
-    Token tok = advance();
-
-    if (tok.type == TokenType::Number) {
+    if (current.kind == TokenKind::Number) {
         auto lit = std::make_unique<Literal>();
-        lit->value = std::stod(tok.lexeme);
+        lit->value = std::stod(current.lexeme);
+        advance();
         return lit;
     }
 
