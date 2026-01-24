@@ -1,18 +1,17 @@
 #pragma once
-#include <memory>
-#include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
+#include <llvm/IR/IRBuilder.h>
+#include <memory>
 
-/*
-  Central LLVM state for NEXA
-*/
 struct LLVMState {
-    llvm::LLVMContext context;
+    std::unique_ptr<llvm::LLVMContext> context;
     std::unique_ptr<llvm::Module> module;
-    llvm::IRBuilder<> builder;
+    std::unique_ptr<llvm::IRBuilder<>> builder;
 
-    LLVMState()
-        : module(std::make_unique<llvm::Module>("nexa", context)),
-          builder(context) {}
+    LLVMState() {
+        context = std::make_unique<llvm::LLVMContext>();
+        module = std::make_unique<llvm::Module>("nexa_module", *context);
+        builder = std::make_unique<llvm::IRBuilder<>>(*context);
+    }
 };

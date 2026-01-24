@@ -1,37 +1,29 @@
-#include "SymbolTable.h"
-#include "../ast/Ast.h"
+#include "SemanticAnalyzer.h"
 #include <stdexcept>
 
-class SemanticAnalyzer {
-public:
-    void analyze(Program& program) {
-        for (auto& stmt : program.statements) {
-            analyzeDeclaration(static_cast<Declaration&>(*stmt));
+void SemanticAnalyzer::analyze(Program& program) {
+    for (auto& stmt : program.statements) {
+        // Attempt to treat the statement as a variable declaration
+        if (auto* varDecl = dynamic_cast<VarDecl*>(stmt.get())) {
+            analyzeVarDecl(*varDecl);
         }
     }
+}
 
-private:
-    SymbolTable symbols;
+SemanticType SemanticAnalyzer::lowerType(const TypeSpec& t) {
+    // Maps the AST TypeSpec fields (kind, rows, cols) to the SemanticType
+    return SemanticType{ t.kind, t.rows, t.cols };
+}
 
-    SemanticType lowerType(const TypeSpec& t) {
-        return SemanticType{ t.kind, t.rows, t.cols };
+void SemanticAnalyzer::analyzeVarDecl(VarDecl& decl) {
+    const std::string& name = decl.name;
+
+    // Check for redeclaration
+    if (symbols.exists(name)) {
+        throw std::runtime_error("Semantic Error: Redeclaration of variable '" + name + "'");
     }
 
-    void analyzeDeclaration(Declaration& decl) {
-        if (decl.names.size() != decl.values.size()) {
-            throw std::runtime_error("Variable count does not match value count");
-        }
-
-        SemanticType declType = lowerType(decl.type);
-
-        for (size_t i = 0; i < decl.names.size(); ++i) {
-            const std::string& name = decl.names[i];
-
-            if (symbols.exists(name)) {
-                throw std::runtime_error("Redeclaration of variable: " + name);
-            }
-
-            symbols.insert(name, declType);
-        }
-    }
-};
+    // Register in symbol table
+    SemanticType declType = lowerType(decl.type);
+    symbols.insert(name, declType);
+}

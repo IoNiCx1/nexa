@@ -1,33 +1,22 @@
 #pragma once
-
 #include "../ast/Ast.h"
-#include <llvm/IR/LLVMContext.h>
-#include <llvm/IR/IRBuilder.h>
-#include <llvm/IR/Module.h>
-#include <memory>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
+#include <unordered_map>
+#include <string>
 
-/*
-  Shared LLVM state
-*/
-struct LLVMState {
-    llvm::LLVMContext context;
-    std::unique_ptr<llvm::Module> module;
-    llvm::IRBuilder<> builder;
+struct LLVMState; 
 
-    LLVMState()
-        : module(std::make_unique<llvm::Module>("nexa", context)),
-          builder(context) {}
-};
-
-/*
-  Code generation entry
-*/
 class CodeGen {
 public:
     explicit CodeGen(LLVMState& state);
-
     void generate(Program& program);
 
 private:
     LLVMState& llvm;
+    std::unordered_map<std::string, llvm::Value*> namedValues;
+
+    void genVarDecl(VarDecl& decl);
+    llvm::Value* genExpression(Expr& expr);
+    llvm::Type* toLLVMType(const TypeSpec& type);
 };

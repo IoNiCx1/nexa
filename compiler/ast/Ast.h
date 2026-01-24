@@ -1,92 +1,47 @@
 #pragma once
+#include <memory>
 #include <string>
 #include <vector>
-#include <memory>
 
-/*
-  Base AST node
-*/
-struct ASTNode {
-    virtual ~ASTNode() = default;
-};
-
-/*
-  =========================
-  TYPE SYSTEM (SYMBOL BASED)
-  =========================
-*/
-enum class TypeKind {
-    I32,     // < >
-    I64,     // << >>
-    F32,     // < <float> >
-    F64,     // << <double> >>
-    CHAR,    // { }
-    STRING,  // {{ }}
-    BOOL     // / /
-};
+enum class TypeKind { None, Int, Float, Void, Bool };
 
 struct TypeSpec {
     TypeKind kind;
+    int rows; 
+    int cols;
 
-    // Shape info (vector / matrix)
-    int rows = 1;
-    int cols = 1;
-
-    bool isScalar() const { return rows == 1 && cols == 1; }
-    bool isVector() const { return rows == 1 && cols > 1; }
-    bool isMatrix() const { return rows > 1 && cols > 1; }
+    TypeSpec() : kind(TypeKind::None), rows(0), cols(0) {}
+    TypeSpec(TypeKind k, int r, int c) : kind(k), rows(r), cols(c) {}
 };
 
-/*
-  =========================
-  EXPRESSIONS
-  =========================
-*/
-struct Expr : ASTNode {
-    TypeSpec type;
+struct AstNode {
+    virtual ~AstNode() = default;
 };
 
-struct IntLiteral : Expr {
+struct Expr : AstNode {
+    virtual ~Expr() = default;
+};
+using ExprPtr = std::unique_ptr<Expr>;
+
+struct IntegerLiteral : Expr {
     int value;
+    explicit IntegerLiteral(int v) : value(v) {}
 };
 
-struct FloatLiteral : Expr {
-    double value;
+struct Stmt : AstNode {
+    virtual ~Stmt() = default;
 };
+using StmtPtr = std::unique_ptr<Stmt>;
 
-struct BoolLiteral : Expr {
-    bool value;
-};
-
-struct CharLiteral : Expr {
-    char value;
-};
-
-struct StringLiteral : Expr {
-    std::string value;
-};
-
-struct VariableRef : Expr {
+struct VarDecl : Stmt {
     std::string name;
-};
-
-/*
-  =========================
-  DECLARATIONS
-  <a,b,c> = 1,2,3
-  =========================
-*/
-struct Declaration : ASTNode {
     TypeSpec type;
-    std::vector<std::string> names;
-    std::vector<std::unique_ptr<Expr>> values;
+    ExprPtr initializer;
+
+    VarDecl(std::string n, TypeSpec t, ExprPtr init)
+        : name(std::move(n)), type(t), initializer(std::move(init)) {}
 };
 
-/*
-  =========================
-  PROGRAM ROOT
-  =========================
-*/
-struct Program : ASTNode {
-    std::vector<std::unique_ptr<ASTNode>> statements;
+struct Program : AstNode {
+    std::vector<StmtPtr> statements;
 };

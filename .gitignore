@@ -1,11 +1,16 @@
-# Build artifacts
+# Build directory
 build/
-CMakeCache.txt
-CMakeFiles/
-cmake_install.cmake
-Makefile
-nexa
+bin/
 
-# Object files
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+*.swp
+
+# Compiled objects
 *.o
-*.o.d
+*.a
+*.so

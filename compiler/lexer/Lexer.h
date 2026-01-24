@@ -9,12 +9,24 @@ public:
     Token nextToken();
 
 private:
-    const std::string& src;
+    std::string src;
     size_t pos = 0;
     int line = 1;
     int column = 1;
 
-    char peek() const;
+    // Core helpers
+    char peek(int offset = 0) const;
     char advance();
+    bool isAtEnd() const;
+
     void skipWhitespace();
+
+    // Token creation
+    Token makeToken(TokenKind kind, const std::string& lexeme);
+
+    // Literal scanners
+    Token identifierOrKeyword();
+    Token numberLiteral();
+    Token stringLiteral();
+    Token charLiteral();
 };

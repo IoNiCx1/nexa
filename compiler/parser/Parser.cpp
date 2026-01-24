@@ -1,108 +1,46 @@
 #include "Parser.h"
-#include <stdexcept>
+#include "../ast/Ast.h"
 
-/* =========================
-   Constructor
-   ========================= */
-
-Parser::Parser(Lexer& lexer)
-    : lexer(lexer) {
+Parser::Parser(Lexer& lexer) : lexer(lexer) {
     advance();
 }
-
-/* =========================
-   Utilities
-   ========================= */
 
 void Parser::advance() {
     current = lexer.nextToken();
 }
 
-bool Parser::match(TokenKind kind) {
-    if (current.kind == kind) {
-        advance();
-        return true;
-    }
-    return false;
-}
-
-void Parser::expect(TokenKind kind, const char* msg) {
-    if (current.kind != kind) {
-        throw std::runtime_error(msg);
-    }
-    advance();
-}
-
-/* =========================
-   Entry
-   ========================= */
-
 std::unique_ptr<Program> Parser::parseProgram() {
     auto program = std::make_unique<Program>();
 
-    while (current.kind != TokenKind::End) {
-        program->statements.push_back(parseDeclaration());
+    while (current.kind != TokenKind::EndOfFile) {
+        program->statements.push_back(parseStatement());
     }
 
     return program;
 }
 
-/* =========================
-   Declarations
-   ========================= */
+StmtPtr Parser::parseStatement() {
+    // Placeholder: int x = 5;
+    if (current.kind == TokenKind::KeywordInt) {
+        advance(); // consume 'int'
 
-std::unique_ptr<Declaration> Parser::parseDeclaration() {
-    auto decl = std::make_unique<Declaration>();
+        std::string name = current.lexeme;
+        advance(); // identifier
 
-    decl->type = parseType();
+        advance(); // '='
 
-    // <a,b,c>
-    do {
-        if (current.kind != TokenKind::Identifier) {
-            throw std::runtime_error("Expected identifier");
-        }
-        decl->names.push_back(current.lexeme);
-        advance();
-    } while (match(TokenKind::Comma));
+        int value = std::stoi(current.lexeme);
+        advance(); // number
 
-    expect(TokenKind::Assign, "Expected '='");
+        advance(); // ';'
 
-    // 1,2,3
-    do {
-        decl->values.push_back(parseExpression());
-    } while (match(TokenKind::Comma));
+        TypeSpec type{TypeKind::Int, 0, 0};
+        auto init = std::make_unique<IntegerLiteral>(value);
 
-    return decl;
-}
-
-/* =========================
-   Type
-   ========================= */
-
-TypeSpec Parser::parseType() {
-    TypeSpec type;
-
-    expect(TokenKind::LAngle, "Expected '<'");
-
-    // scalar / vector inferred later
-    type.kind = TypeKind::Scalar;
-
-    expect(TokenKind::RAngle, "Expected '>'");
-
-    return type;
-}
-
-/* =========================
-   Expressions
-   ========================= */
-
-std::unique_ptr<Expr> Parser::parseExpression() {
-    if (current.kind == TokenKind::Number) {
-        auto lit = std::make_unique<Literal>();
-        lit->value = std::stod(current.lexeme);
-        advance();
-        return lit;
+        return std::make_unique<VarDecl>(name, type, std::move(init));
     }
 
-    throw std::runtime_error("Invalid expression");
+    // fallback
+    advance();
+    return nullptr;
 }
