@@ -1,11 +1,15 @@
 #include "Lexer.h"
 #include <cctype>
 
-Lexer::Lexer(const std::string& source) : src(source) {}
+Lexer::Lexer(const std::string& source) : src(source), pos(0), line(1), column(1) {}
 
 char Lexer::peek(int offset) const {
     if (pos + offset >= src.size()) return '\0';
     return src[pos + offset];
+}
+
+bool Lexer::isAtEnd() const {
+    return pos >= src.size();
 }
 
 char Lexer::advance() {
@@ -16,45 +20,49 @@ char Lexer::advance() {
 }
 
 void Lexer::skipWhitespace() {
-    while (true) {
-        char c = peek();
-        if (c == ' ' || c == '\t' || c == '\r') {
-            advance();
-        } else if (c == '\n') {
-            advance();
+    while (!isAtEnd() && (peek() == ' ' || peek() == '\r' || peek() == '\t' || peek() == '\n')) {
+        if (peek() == '\n') {
             line++;
             column = 1;
+            pos++; // Skip the newline
         } else {
-            break;
+            advance();
         }
     }
 }
 
 Token Lexer::makeToken(TokenKind kind, const std::string& lexeme) {
-    return Token{kind, lexeme, line, column};
+    // We subtract lexeme length from column to get the START position of the token
+    return Token{kind, lexeme, line, column - (int)lexeme.length()};
 }
 
 Token Lexer::nextToken() {
     skipWhitespace();
+    
+    if (isAtEnd()) return makeToken(TokenKind::EndOfFile, "");
+
     char c = peek();
 
-    if (c == '\0') return makeToken(TokenKind::EndOfFile, "");
-
-    // Longest Match
+    // --- Longest Match Operators ---
     if (c == '<' && peek(1) == '<') { advance(); advance(); return makeToken(TokenKind::TYPE_I64_OPEN, "<<"); }
     if (c == '>' && peek(1) == '>') { advance(); advance(); return makeToken(TokenKind::TYPE_I64_CLOSE, ">>"); }
     if (c == '{' && peek(1) == '{') { advance(); advance(); return makeToken(TokenKind::TYPE_STRING_OPEN, "{{"); }
     if (c == '}' && peek(1) == '}') { advance(); advance(); return makeToken(TokenKind::TYPE_STRING_CLOSE, "}}"); }
 
-    // Single Characters
+    // --- Single Characters ---
     if (c == '=') { advance(); return makeToken(TokenKind::Assign, "="); }
     if (c == ',') { advance(); return makeToken(TokenKind::Comma, ","); }
+    
+    // FIX: ADDED SEMICOLON HANDLING HERE
+    if (c == ';') { advance(); return makeToken(TokenKind::Semicolon, ";"); }
+    
     if (c == '<') { advance(); return makeToken(TokenKind::TYPE_I32_OPEN, "<"); }
     if (c == '>') { advance(); return makeToken(TokenKind::TYPE_I32_CLOSE, ">"); }
     if (c == '{') { advance(); return makeToken(TokenKind::TYPE_CHAR_OPEN, "{"); }
     if (c == '}') { advance(); return makeToken(TokenKind::TYPE_CHAR_CLOSE, "}"); }
     if (c == '/') { advance(); return makeToken(TokenKind::TYPE_BOOL, "/"); }
 
+    // --- Literals ---
     if (std::isdigit(c)) return numberLiteral();
     if (std::isalpha(c) || c == '_') return identifierOrKeyword();
     if (c == '"') return stringLiteral();
@@ -65,7 +73,7 @@ Token Lexer::nextToken() {
 
 Token Lexer::identifierOrKeyword() {
     size_t start = pos;
-    while (std::isalnum(peek()) || peek() == '_') advance();
+    while (!isAtEnd() && (std::isalnum(peek()) || peek() == '_')) advance();
     std::string text = src.substr(start, pos - start);
 
     if (text == "int")   return makeToken(TokenKind::KeywordInt, text);
@@ -78,11 +86,11 @@ Token Lexer::identifierOrKeyword() {
 Token Lexer::numberLiteral() {
     size_t start = pos;
     bool isFloat = false;
-    while (std::isdigit(peek())) advance();
+    while (!isAtEnd() && std::isdigit(peek())) advance();
     if (peek() == '.') {
         isFloat = true;
         advance();
-        while (std::isdigit(peek())) advance();
+        while (!isAtEnd() && std::isdigit(peek())) advance();
     }
     return makeToken(isFloat ? TokenKind::FloatLiteral : TokenKind::IntegerLiteral, src.substr(start, pos - start));
 }
@@ -90,15 +98,17 @@ Token Lexer::numberLiteral() {
 Token Lexer::stringLiteral() {
     advance(); // opening "
     size_t start = pos;
-    while (peek() != '"' && peek() != '\0') advance();
+    while (!isAtEnd() && peek() != '"') advance();
     std::string text = src.substr(start, pos - start);
-    if (peek() == '"') advance(); 
+    if (!isAtEnd()) advance(); // closing "
     return makeToken(TokenKind::StringLiteral, text);
 }
 
 Token Lexer::charLiteral() {
     advance(); // '
-    std::string val(1, advance());
-    if (peek() == '\'') advance();
+    size_t start = pos;
+    if (!isAtEnd()) advance(); 
+    std::string val = src.substr(start, pos - start);
+    if (peek() == '\'') advance(); // closing '
     return makeToken(TokenKind::CharLiteral, val);
 }

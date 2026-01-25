@@ -10,8 +10,8 @@ struct TypeSpec {
     int rows; 
     int cols;
 
-    TypeSpec() : kind(TypeKind::None), rows(0), cols(0) {}
-    TypeSpec(TypeKind k, int r, int c) : kind(k), rows(r), cols(c) {}
+    TypeSpec() : kind(TypeKind::None), rows(1), cols(1) {}
+    TypeSpec(TypeKind k, int r=1, int c=1) : kind(k), rows(r), cols(c) {}
 };
 
 struct AstNode {
