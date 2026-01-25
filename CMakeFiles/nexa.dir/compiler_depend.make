@@ -547,15 +547,19 @@ CMakeFiles/nexa.dir/compiler/main.cpp.o: compiler/main.cpp \
   /usr/include/c++/15/bits/basic_string.tcc \
   /usr/include/c++/15/bits/char_traits.h \
   /usr/include/c++/15/bits/charconv.h \
+  /usr/include/c++/15/bits/chrono.h \
+  /usr/include/c++/15/bits/codecvt.h \
   /usr/include/c++/15/bits/concept_check.h \
   /usr/include/c++/15/bits/cpp_type_traits.h \
   /usr/include/c++/15/bits/cxxabi_forced.h \
   /usr/include/c++/15/bits/cxxabi_init_exception.h \
+  /usr/include/c++/15/bits/deque.tcc \
   /usr/include/c++/15/bits/enable_special_members.h \
   /usr/include/c++/15/bits/erase_if.h \
   /usr/include/c++/15/bits/exception.h \
   /usr/include/c++/15/bits/exception_defines.h \
   /usr/include/c++/15/bits/exception_ptr.h \
+  /usr/include/c++/15/bits/fstream.tcc \
   /usr/include/c++/15/bits/functexcept.h \
   /usr/include/c++/15/bits/functional_hash.h \
   /usr/include/c++/15/bits/hash_bytes.h \
@@ -578,6 +582,7 @@ CMakeFiles/nexa.dir/compiler/main.cpp.o: compiler/main.cpp \
   /usr/include/c++/15/bits/ostream.h \
   /usr/include/c++/15/bits/ostream.tcc \
   /usr/include/c++/15/bits/ostream_insert.h \
+  /usr/include/c++/15/bits/parse_numbers.h \
   /usr/include/c++/15/bits/postypes.h \
   /usr/include/c++/15/bits/predefined_ops.h \
   /usr/include/c++/15/bits/ptr_traits.h \
@@ -587,12 +592,14 @@ CMakeFiles/nexa.dir/compiler/main.cpp.o: compiler/main.cpp \
   /usr/include/c++/15/bits/shared_ptr.h \
   /usr/include/c++/15/bits/shared_ptr_atomic.h \
   /usr/include/c++/15/bits/shared_ptr_base.h \
+  /usr/include/c++/15/bits/sstream.tcc \
   /usr/include/c++/15/bits/std_abs.h \
   /usr/include/c++/15/bits/std_function.h \
   /usr/include/c++/15/bits/stl_algo.h \
   /usr/include/c++/15/bits/stl_algobase.h \
   /usr/include/c++/15/bits/stl_bvector.h \
   /usr/include/c++/15/bits/stl_construct.h \
+  /usr/include/c++/15/bits/stl_deque.h \
   /usr/include/c++/15/bits/stl_function.h \
   /usr/include/c++/15/bits/stl_heap.h \
   /usr/include/c++/15/bits/stl_iterator.h \
@@ -601,6 +608,7 @@ CMakeFiles/nexa.dir/compiler/main.cpp.o: compiler/main.cpp \
   /usr/include/c++/15/bits/stl_pair.h \
   /usr/include/c++/15/bits/stl_raw_storage_iter.h \
   /usr/include/c++/15/bits/stl_relops.h \
+  /usr/include/c++/15/bits/stl_stack.h \
   /usr/include/c++/15/bits/stl_tempbuf.h \
   /usr/include/c++/15/bits/stl_uninitialized.h \
   /usr/include/c++/15/bits/stl_vector.h \
@@ -620,6 +628,7 @@ CMakeFiles/nexa.dir/compiler/main.cpp.o: compiler/main.cpp \
   /usr/include/c++/15/cassert \
   /usr/include/c++/15/cctype \
   /usr/include/c++/15/cerrno \
+  /usr/include/c++/15/chrono \
   /usr/include/c++/15/climits \
   /usr/include/c++/15/clocale \
   /usr/include/c++/15/compare \
@@ -629,10 +638,12 @@ CMakeFiles/nexa.dir/compiler/main.cpp.o: compiler/main.cpp \
   /usr/include/c++/15/cstdio \
   /usr/include/c++/15/cstdlib \
   /usr/include/c++/15/cstring \
+  /usr/include/c++/15/ctime \
   /usr/include/c++/15/cwchar \
   /usr/include/c++/15/cwctype \
   /usr/include/c++/15/debug/assertions.h \
   /usr/include/c++/15/debug/debug.h \
+  /usr/include/c++/15/deque \
   /usr/include/c++/15/exception \
   /usr/include/c++/15/ext/aligned_buffer.h \
   /usr/include/c++/15/ext/alloc_traits.h \
@@ -641,6 +652,7 @@ CMakeFiles/nexa.dir/compiler/main.cpp.o: compiler/main.cpp \
   /usr/include/c++/15/ext/numeric_traits.h \
   /usr/include/c++/15/ext/string_conversions.h \
   /usr/include/c++/15/ext/type_traits.h \
+  /usr/include/c++/15/fstream \
   /usr/include/c++/15/functional \
   /usr/include/c++/15/initializer_list \
   /usr/include/c++/15/ios \
@@ -657,6 +669,9 @@ CMakeFiles/nexa.dir/compiler/main.cpp.o: compiler/main.cpp \
   /usr/include/c++/15/pstl/glue_algorithm_defs.h \
   /usr/include/c++/15/pstl/glue_memory_defs.h \
   /usr/include/c++/15/pstl/pstl_config.h \
+  /usr/include/c++/15/ratio \
+  /usr/include/c++/15/sstream \
+  /usr/include/c++/15/stack \
   /usr/include/c++/15/stdexcept \
   /usr/include/c++/15/streambuf \
   /usr/include/c++/15/string \
@@ -760,8 +775,10 @@ CMakeFiles/nexa.dir/compiler/main.cpp.o: compiler/main.cpp \
   /usr/include/x86_64-linux-gnu/bits/wordsize.h \
   /usr/include/x86_64-linux-gnu/bits/xopen_lim.h \
   /usr/include/x86_64-linux-gnu/c++/15/bits/atomic_word.h \
+  /usr/include/x86_64-linux-gnu/c++/15/bits/basic_file.h \
   /usr/include/x86_64-linux-gnu/c++/15/bits/c++allocator.h \
   /usr/include/x86_64-linux-gnu/c++/15/bits/c++config.h \
+  /usr/include/x86_64-linux-gnu/c++/15/bits/c++io.h \
   /usr/include/x86_64-linux-gnu/c++/15/bits/c++locale.h \
   /usr/include/x86_64-linux-gnu/c++/15/bits/cpu_defines.h \
   /usr/include/x86_64-linux-gnu/c++/15/bits/ctype_base.h \
@@ -787,6 +804,7 @@ CMakeFiles/nexa.dir/compiler/main.cpp.o: compiler/main.cpp \
   /usr/lib/linux/uapi/x86/asm/posix_types_64.h \
   /usr/lib/linux/uapi/x86/asm/types.h \
   /usr/lib/llvm-18/include/llvm-c/DataTypes.h \
+  /usr/lib/llvm-18/include/llvm-c/Error.h \
   /usr/lib/llvm-18/include/llvm-c/ExternC.h \
   /usr/lib/llvm-18/include/llvm-c/Types.h \
   /usr/lib/llvm-18/include/llvm/ADT/ADL.h \
@@ -810,6 +828,7 @@ CMakeFiles/nexa.dir/compiler/main.cpp.o: compiler/main.cpp \
   /usr/lib/llvm-18/include/llvm/ADT/STLFunctionalExtras.h \
   /usr/lib/llvm-18/include/llvm/ADT/Sequence.h \
   /usr/lib/llvm-18/include/llvm/ADT/SmallPtrSet.h \
+  /usr/lib/llvm-18/include/llvm/ADT/SmallString.h \
   /usr/lib/llvm-18/include/llvm/ADT/SmallVector.h \
   /usr/lib/llvm-18/include/llvm/ADT/StringMap.h \
   /usr/lib/llvm-18/include/llvm/ADT/StringMapEntry.h \
@@ -882,15 +901,25 @@ CMakeFiles/nexa.dir/compiler/main.cpp.o: compiler/main.cpp \
   /usr/lib/llvm-18/include/llvm/Support/AtomicOrdering.h \
   /usr/lib/llvm-18/include/llvm/Support/CBindingWrapping.h \
   /usr/lib/llvm-18/include/llvm/Support/Casting.h \
+  /usr/lib/llvm-18/include/llvm/Support/Chrono.h \
   /usr/lib/llvm-18/include/llvm/Support/CodeGen.h \
   /usr/lib/llvm-18/include/llvm/Support/Compiler.h \
   /usr/lib/llvm-18/include/llvm/Support/DataTypes.h \
+  /usr/lib/llvm-18/include/llvm/Support/Debug.h \
   /usr/lib/llvm-18/include/llvm/Support/Endian.h \
+  /usr/lib/llvm-18/include/llvm/Support/Error.h \
   /usr/lib/llvm-18/include/llvm/Support/ErrorHandling.h \
+  /usr/lib/llvm-18/include/llvm/Support/ErrorOr.h \
+  /usr/lib/llvm-18/include/llvm/Support/FileSystem.h \
+  /usr/lib/llvm-18/include/llvm/Support/FileSystem/UniqueID.h \
+  /usr/lib/llvm-18/include/llvm/Support/Format.h \
+  /usr/lib/llvm-18/include/llvm/Support/FormatProviders.h \
+  /usr/lib/llvm-18/include/llvm/Support/FormatVariadicDetails.h \
   /usr/lib/llvm-18/include/llvm/Support/MD5.h \
   /usr/lib/llvm-18/include/llvm/Support/MathExtras.h \
   /usr/lib/llvm-18/include/llvm/Support/MemAlloc.h \
   /usr/lib/llvm-18/include/llvm/Support/ModRef.h \
+  /usr/lib/llvm-18/include/llvm/Support/NativeFormatting.h \
   /usr/lib/llvm-18/include/llvm/Support/PointerLikeTypeTraits.h \
   /usr/lib/llvm-18/include/llvm/Support/ReverseIteration.h \
   /usr/lib/llvm-18/include/llvm/Support/SwapByteOrder.h \
@@ -1383,8 +1412,6 @@ nexa: /lib/x86_64-linux-gnu/libc.so.6 \
   CMakeFiles/nexa.dir/compiler/sema/SemanticAnalyzer.cpp.o
 
 
-CMakeFiles/nexa.dir/compiler/sema/SemanticAnalyzer.cpp.o:
-
 CMakeFiles/nexa.dir/compiler/parser/Parser.cpp.o:
 
 CMakeFiles/nexa.dir/compiler/lexer/Lexer.cpp.o:
@@ -1396,8 +1423,6 @@ CMakeFiles/nexa.dir/compiler/lexer/Lexer.cpp.o:
 /usr/lib/x86_64-linux-gnu/libtinfo.so:
 
 /usr/lib/x86_64-linux-gnu/libc_nonshared.a:
-
-/usr/lib/llvm-18/lib/libLLVMX86AsmParser.a:
 
 /usr/lib/llvm-18/lib/libLLVMTextAPI.a:
 
@@ -1449,9 +1474,31 @@ CMakeFiles/nexa.dir/compiler/lexer/Lexer.cpp.o:
 
 /lib64/ld-linux-x86-64.so.2:
 
+/usr/lib/llvm-18/include/llvm/Support/FormatProviders.h:
+
 compiler/sema/SemanticAnalyzer.cpp:
 
+/usr/lib/llvm-18/include/llvm/Support/FileSystem/UniqueID.h:
+
+/usr/lib/llvm-18/include/llvm/Support/ErrorOr.h:
+
+/usr/lib/llvm-18/include/llvm/Support/Error.h:
+
+/usr/lib/llvm-18/include/llvm/Support/Debug.h:
+
+/usr/lib/llvm-18/lib/libLLVMX86AsmParser.a:
+
+/usr/lib/llvm-18/include/llvm/Support/Chrono.h:
+
+/usr/lib/llvm-18/include/llvm/ADT/SmallString.h:
+
 /usr/include/x86_64-linux-gnu/c++/15/bits/ctype_base.h:
+
+CMakeFiles/nexa.dir/compiler/sema/SemanticAnalyzer.cpp.o:
+
+/usr/include/x86_64-linux-gnu/c++/15/bits/c++io.h:
+
+/usr/include/c++/15/stack:
 
 /usr/include/c++/15/istream:
 
@@ -1459,7 +1506,11 @@ compiler/sema/SemanticAnalyzer.cpp:
 
 /usr/include/c++/15/ios:
 
+/usr/include/c++/15/deque:
+
 /usr/include/c++/15/cwctype:
+
+/usr/include/c++/15/bits/parse_numbers.h:
 
 /usr/include/c++/15/bits/ostream.tcc:
 
@@ -1468,6 +1519,8 @@ compiler/sema/SemanticAnalyzer.cpp:
 /usr/include/c++/15/bits/locale_facets.tcc:
 
 /usr/include/c++/15/bits/locale_facets.h:
+
+/usr/include/c++/15/bits/chrono.h:
 
 /usr/include/c++/15/bits/basic_ios.tcc:
 
@@ -1563,6 +1616,8 @@ CMakeFiles/nexa.dir/compiler/main.cpp.o:
 
 /usr/lib/llvm-18/include/llvm/ADT/iterator.h:
 
+/usr/include/c++/15/ctime:
+
 /usr/lib/llvm-18/include/llvm/ADT/ilist_node_base.h:
 
 /usr/lib/llvm-18/include/llvm/ADT/ilist_node.h:
@@ -1609,6 +1664,8 @@ CMakeFiles/nexa.dir/compiler/main.cpp.o:
 
 /usr/lib/llvm-18/include/llvm/ADT/Hashing.h:
 
+/usr/include/c++/15/bits/stl_stack.h:
+
 /usr/lib/llvm-18/include/llvm/ADT/GraphTraits.h:
 
 /usr/lib/llvm-18/include/llvm/ADT/FloatingPointMode.h:
@@ -1630,6 +1687,8 @@ CMakeFiles/nexa.dir/compiler/main.cpp.o:
 /usr/lib/llvm-18/include/llvm/ADT/APInt.h:
 
 /usr/lib/llvm-18/include/llvm/ADT/APFloat.h:
+
+/usr/include/c++/15/bits/sstream.tcc:
 
 compiler/ir/LLVMContext.h:
 
@@ -1691,7 +1750,11 @@ compiler/ir/LLVMContext.h:
 
 /usr/include/x86_64-linux-gnu/bits/stdint-intn.h:
 
+/usr/lib/llvm-18/include/llvm/Support/FormatVariadicDetails.h:
+
 /usr/include/c++/15/bits/stl_algo.h:
+
+/usr/lib/llvm-18/include/llvm/Support/Format.h:
 
 /usr/include/c++/15/clocale:
 
@@ -1745,6 +1808,8 @@ CMakeFiles/nexa.dir/compiler/ir/CodeGen.cpp.o:
 
 /usr/lib/llvm-18/lib/libLLVMX86CodeGen.a:
 
+/usr/include/c++/15/bits/deque.tcc:
+
 /usr/include/c++/15/bits/stl_tempbuf.h:
 
 /usr/include/c++/15/bits/stl_algobase.h:
@@ -1755,6 +1820,8 @@ CMakeFiles/nexa.dir/compiler/ir/CodeGen.cpp.o:
 
 /usr/include/c++/15/bits/stl_raw_storage_iter.h:
 
+/usr/include/c++/15/fstream:
+
 /usr/include/assert.h:
 
 /usr/include/c++/15/bits/algorithmfwd.h:
@@ -1764,6 +1831,8 @@ CMakeFiles/nexa.dir/compiler/ir/CodeGen.cpp.o:
 /usr/include/c++/15/bits/stl_bvector.h:
 
 /lib/x86_64-linux-gnu/libc.so.6:
+
+/usr/lib/llvm-18/include/llvm/Support/FileSystem.h:
 
 /usr/include/c++/15/memory:
 
@@ -1792,6 +1861,8 @@ CMakeFiles/nexa.dir/compiler/ir/CodeGen.cpp.o:
 /usr/lib/llvm-18/include/llvm/ADT/iterator_range.h:
 
 /usr/include/c++/15/bits/atomic_base.h:
+
+/usr/include/c++/15/bits/codecvt.h:
 
 /usr/include/c++/15/bits/std_function.h:
 
@@ -1841,6 +1912,8 @@ CMakeFiles/nexa.dir/compiler/ir/CodeGen.cpp.o:
 
 /usr/lib/llvm-18/lib/libLLVMProfileData.a:
 
+/usr/lib/llvm-18/include/llvm/Support/NativeFormatting.h:
+
 /usr/lib/llvm-18/include/llvm/Config/abi-breaking.h:
 
 /usr/include/pthread.h:
@@ -1876,6 +1949,8 @@ CMakeFiles/nexa.dir/compiler/ir/CodeGen.cpp.o:
 /usr/include/asm-generic/int-ll64.h:
 
 /usr/lib/llvm-18/lib/libLLVMSupport.a:
+
+/usr/include/c++/15/bits/fstream.tcc:
 
 /usr/lib/llvm-18/include/llvm/IR/GlobalValue.h:
 
@@ -1967,6 +2042,8 @@ compiler/sema/SemanticAnalyzer.h:
 
 /usr/include/c++/15/ext/concurrence.h:
 
+/usr/include/c++/15/bits/stl_deque.h:
+
 /usr/include/x86_64-linux-gnu/bits/types/__FILE.h:
 
 /usr/lib/llvm-18/lib/libLLVMCodeGen.a:
@@ -2033,6 +2110,8 @@ compiler/sema/SemanticAnalyzer.h:
 
 /usr/include/c++/15/bits/ios_base.h:
 
+/usr/include/c++/15/sstream:
+
 /usr/include/wchar.h:
 
 /usr/include/c++/15/bits/postypes.h:
@@ -2047,6 +2126,8 @@ compiler/sema/SemanticAnalyzer.h:
 
 /usr/include/c++/15/pstl/pstl_config.h:
 
+/usr/include/c++/15/ratio:
+
 /usr/include/c++/15/stdexcept:
 
 /usr/lib/linux/uapi/x86/asm/types.h:
@@ -2060,6 +2141,8 @@ compiler/sema/SemanticAnalyzer.h:
 /usr/include/c++/15/system_error:
 
 /usr/include/x86_64-linux-gnu/sys/cdefs.h:
+
+/usr/include/c++/15/chrono:
 
 /usr/lib/llvm-18/include/llvm/Support/MD5.h:
 
@@ -2185,6 +2268,8 @@ compiler/sema/SemanticAnalyzer.h:
 
 /usr/include/x86_64-linux-gnu/bits/stdint-least.h:
 
+/usr/include/x86_64-linux-gnu/c++/15/bits/basic_file.h:
+
 /usr/lib/llvm-18/include/llvm/ADT/MapVector.h:
 
 /usr/include/x86_64-linux-gnu/bits/types/mbstate_t.h:
@@ -2220,6 +2305,8 @@ compiler/parser/Parser.cpp:
 /usr/include/x86_64-linux-gnu/bits/struct_mutex.h:
 
 /usr/include/x86_64-linux-gnu/bits/thread-shared-types.h:
+
+/usr/lib/llvm-18/include/llvm-c/Error.h:
 
 /usr/include/x86_64-linux-gnu/bits/select.h:
 

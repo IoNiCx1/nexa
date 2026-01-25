@@ -158,75 +158,107 @@ CMakeFiles/nexa.dir/compiler/main.cpp.o: \
  /usr/include/c++/15/bits/locale_facets.tcc \
  /usr/include/c++/15/bits/basic_ios.tcc \
  /usr/include/c++/15/bits/ostream.tcc /usr/include/c++/15/istream \
- /usr/include/c++/15/bits/istream.tcc \
- /home/kali/nexa/compiler/lexer/Lexer.h \
- /home/kali/nexa/compiler/lexer/Token.h \
- /home/kali/nexa/compiler/parser/Parser.h \
- /home/kali/nexa/compiler/parser/../ast/Ast.h /usr/include/c++/15/memory \
+ /usr/include/c++/15/bits/istream.tcc /usr/include/c++/15/fstream \
+ /usr/include/c++/15/bits/codecvt.h \
+ /usr/include/x86_64-linux-gnu/c++/15/bits/basic_file.h \
+ /usr/include/x86_64-linux-gnu/c++/15/bits/c++io.h \
+ /usr/include/c++/15/bits/fstream.tcc /usr/include/c++/15/sstream \
+ /usr/include/c++/15/bits/sstream.tcc \
+ /usr/lib/llvm-18/include/llvm/Support/FileSystem.h \
+ /usr/lib/llvm-18/include/llvm/ADT/SmallString.h \
+ /usr/lib/llvm-18/include/llvm/ADT/SmallVector.h \
+ /usr/lib/llvm-18/include/llvm/Support/Compiler.h \
+ /usr/lib/llvm-18/include/llvm/Config/llvm-config.h \
+ /usr/lib/llvm-18/include/llvm/Support/type_traits.h \
+ /usr/include/c++/15/utility /usr/include/c++/15/bits/stl_relops.h \
+ /usr/include/c++/15/algorithm /usr/include/c++/15/bits/stl_algo.h \
+ /usr/include/c++/15/bits/algorithmfwd.h \
+ /usr/include/c++/15/bits/stl_heap.h \
+ /usr/include/c++/15/bits/uniform_int_dist.h \
  /usr/include/c++/15/bits/stl_tempbuf.h \
+ /usr/include/c++/15/pstl/glue_algorithm_defs.h \
+ /usr/include/c++/15/pstl/execution_defs.h /usr/include/c++/15/cassert \
+ /usr/include/assert.h /usr/include/c++/15/cstdint \
+ /usr/lib/gcc/x86_64-linux-gnu/15/include/stdint.h /usr/include/stdint.h \
+ /usr/include/x86_64-linux-gnu/bits/stdint-uintn.h \
+ /usr/include/x86_64-linux-gnu/bits/stdint-least.h \
+ /usr/include/c++/15/cstring /usr/include/string.h /usr/include/strings.h \
+ /usr/include/c++/15/functional /usr/include/c++/15/bits/std_function.h \
+ /usr/include/c++/15/unordered_map \
+ /usr/include/c++/15/bits/unordered_map.h \
+ /usr/include/c++/15/bits/hashtable.h \
+ /usr/include/c++/15/bits/hashtable_policy.h \
+ /usr/include/c++/15/ext/aligned_buffer.h \
+ /usr/include/c++/15/bits/enable_special_members.h \
+ /usr/include/c++/15/bits/node_handle.h \
+ /usr/include/c++/15/bits/erase_if.h /usr/include/c++/15/vector \
  /usr/include/c++/15/bits/stl_uninitialized.h \
+ /usr/include/c++/15/bits/stl_vector.h \
+ /usr/include/c++/15/bits/stl_bvector.h \
+ /usr/include/c++/15/bits/vector.tcc /usr/include/c++/15/array \
+ /usr/include/c++/15/compare /usr/include/c++/15/iterator \
+ /usr/include/c++/15/bits/stream_iterator.h /usr/include/c++/15/limits \
+ /usr/include/c++/15/memory \
  /usr/include/c++/15/bits/stl_raw_storage_iter.h \
  /usr/include/c++/15/bits/align.h /usr/include/c++/15/bits/unique_ptr.h \
  /usr/include/c++/15/bits/shared_ptr.h \
  /usr/include/c++/15/bits/shared_ptr_base.h \
  /usr/include/c++/15/bits/allocated_ptr.h \
- /usr/include/c++/15/ext/aligned_buffer.h \
  /usr/include/c++/15/ext/concurrence.h \
  /usr/include/c++/15/bits/shared_ptr_atomic.h \
  /usr/include/c++/15/bits/atomic_base.h \
  /usr/include/c++/15/bits/atomic_lockfree_defines.h \
  /usr/include/c++/15/backward/auto_ptr.h \
  /usr/include/c++/15/pstl/glue_memory_defs.h \
- /usr/include/c++/15/pstl/execution_defs.h /usr/include/c++/15/vector \
- /usr/include/c++/15/bits/stl_vector.h \
- /usr/include/c++/15/bits/stl_bvector.h \
- /usr/include/c++/15/bits/vector.tcc \
+ /usr/lib/llvm-18/include/llvm/ADT/StringRef.h \
+ /usr/lib/llvm-18/include/llvm/ADT/DenseMapInfo.h \
+ /usr/lib/llvm-18/include/llvm/ADT/STLFunctionalExtras.h \
+ /usr/lib/llvm-18/include/llvm/ADT/STLForwardCompat.h \
+ /usr/include/c++/15/optional \
+ /usr/lib/llvm-18/include/llvm/ADT/iterator_range.h \
+ /usr/lib/llvm-18/include/llvm/ADT/ADL.h \
+ /usr/lib/llvm-18/include/llvm/ADT/Twine.h \
+ /usr/lib/llvm-18/include/llvm/Support/ErrorHandling.h \
+ /usr/lib/llvm-18/include/llvm/Support/Chrono.h \
+ /usr/lib/llvm-18/include/llvm/Support/FormatProviders.h \
+ /usr/lib/llvm-18/include/llvm/ADT/STLExtras.h \
+ /usr/lib/llvm-18/include/llvm/ADT/Hashing.h \
+ /usr/lib/llvm-18/include/llvm/Support/DataTypes.h \
+ /usr/lib/llvm-18/include/llvm-c/DataTypes.h /usr/include/inttypes.h \
+ /usr/lib/llvm-18/include/llvm/Support/SwapByteOrder.h \
+ /usr/lib/llvm-18/include/llvm/ADT/bit.h \
+ /usr/lib/llvm-18/include/llvm/ADT/iterator.h \
+ /usr/lib/llvm-18/include/llvm/Config/abi-breaking.h \
+ /usr/lib/llvm-18/include/llvm/ADT/StringSwitch.h \
+ /usr/lib/llvm-18/include/llvm/Support/FormatVariadicDetails.h \
+ /usr/lib/llvm-18/include/llvm/Support/raw_ostream.h \
+ /usr/lib/llvm-18/include/llvm/Support/NativeFormatting.h \
+ /usr/include/c++/15/chrono /usr/include/c++/15/bits/chrono.h \
+ /usr/include/c++/15/ratio /usr/include/c++/15/ctime \
+ /usr/include/c++/15/bits/parse_numbers.h \
+ /usr/lib/llvm-18/include/llvm/Support/Error.h \
+ /usr/lib/llvm-18/include/llvm-c/Error.h \
+ /usr/lib/llvm-18/include/llvm-c/ExternC.h \
+ /usr/lib/llvm-18/include/llvm/Support/AlignOf.h \
+ /usr/lib/llvm-18/include/llvm/Support/Debug.h \
+ /usr/lib/llvm-18/include/llvm/Support/ErrorOr.h \
+ /usr/lib/llvm-18/include/llvm/Support/Format.h \
+ /usr/lib/llvm-18/include/llvm/ADT/ArrayRef.h \
+ /usr/lib/llvm-18/include/llvm/Support/FileSystem/UniqueID.h \
+ /usr/lib/llvm-18/include/llvm/Support/MD5.h \
+ /usr/lib/llvm-18/include/llvm/Support/Endian.h /usr/include/c++/15/stack \
+ /usr/include/c++/15/deque /usr/include/c++/15/bits/stl_deque.h \
+ /usr/include/c++/15/bits/deque.tcc /usr/include/c++/15/bits/stl_stack.h \
+ /home/kali/nexa/compiler/lexer/Lexer.h \
+ /home/kali/nexa/compiler/lexer/Token.h \
+ /home/kali/nexa/compiler/parser/Parser.h \
+ /home/kali/nexa/compiler/parser/../ast/Ast.h \
  /home/kali/nexa/compiler/sema/SemanticAnalyzer.h \
  /home/kali/nexa/compiler/sema/SymbolTable.h \
- /home/kali/nexa/compiler/sema/Type.h /usr/include/c++/15/unordered_map \
- /usr/include/c++/15/bits/unordered_map.h \
- /usr/include/c++/15/bits/hashtable.h \
- /usr/include/c++/15/bits/hashtable_policy.h \
- /usr/include/c++/15/bits/enable_special_members.h \
- /usr/include/c++/15/bits/node_handle.h \
- /usr/include/c++/15/bits/erase_if.h \
+ /home/kali/nexa/compiler/sema/Type.h \
  /home/kali/nexa/compiler/ir/CodeGen.h \
  /usr/lib/llvm-18/include/llvm/IR/Value.h \
  /usr/lib/llvm-18/include/llvm-c/Types.h \
- /usr/lib/llvm-18/include/llvm-c/DataTypes.h /usr/include/inttypes.h \
- /usr/lib/gcc/x86_64-linux-gnu/15/include/stdint.h /usr/include/stdint.h \
- /usr/include/x86_64-linux-gnu/bits/stdint-uintn.h \
- /usr/include/x86_64-linux-gnu/bits/stdint-least.h \
- /usr/lib/llvm-18/include/llvm-c/ExternC.h \
- /usr/lib/llvm-18/include/llvm/ADT/STLExtras.h \
- /usr/lib/llvm-18/include/llvm/ADT/ADL.h /usr/include/c++/15/iterator \
- /usr/include/c++/15/bits/stream_iterator.h /usr/include/c++/15/utility \
- /usr/include/c++/15/bits/stl_relops.h \
- /usr/lib/llvm-18/include/llvm/ADT/Hashing.h \
- /usr/lib/llvm-18/include/llvm/Support/DataTypes.h \
- /usr/lib/llvm-18/include/llvm/Support/ErrorHandling.h \
- /usr/lib/llvm-18/include/llvm/Support/Compiler.h \
- /usr/lib/llvm-18/include/llvm/Config/llvm-config.h \
- /usr/lib/llvm-18/include/llvm/Support/SwapByteOrder.h \
- /usr/lib/llvm-18/include/llvm/ADT/STLForwardCompat.h \
- /usr/include/c++/15/optional /usr/lib/llvm-18/include/llvm/ADT/bit.h \
- /usr/include/c++/15/cstdint /usr/include/c++/15/limits \
- /usr/lib/llvm-18/include/llvm/Support/type_traits.h \
- /usr/include/c++/15/algorithm /usr/include/c++/15/bits/stl_algo.h \
- /usr/include/c++/15/bits/algorithmfwd.h \
- /usr/include/c++/15/bits/stl_heap.h \
- /usr/include/c++/15/bits/uniform_int_dist.h \
- /usr/include/c++/15/pstl/glue_algorithm_defs.h \
- /usr/include/c++/15/cassert /usr/include/assert.h \
- /usr/include/c++/15/cstring /usr/include/string.h /usr/include/strings.h \
- /usr/lib/llvm-18/include/llvm/ADT/STLFunctionalExtras.h \
- /usr/lib/llvm-18/include/llvm/ADT/iterator.h \
- /usr/lib/llvm-18/include/llvm/ADT/iterator_range.h \
- /usr/lib/llvm-18/include/llvm/Config/abi-breaking.h \
- /usr/include/c++/15/functional /usr/include/c++/15/bits/std_function.h \
- /usr/include/c++/15/array /usr/include/c++/15/compare \
- /usr/lib/llvm-18/include/llvm/ADT/StringRef.h \
- /usr/lib/llvm-18/include/llvm/ADT/DenseMapInfo.h \
  /usr/lib/llvm-18/include/llvm/IR/Use.h \
  /usr/lib/llvm-18/include/llvm/Support/CBindingWrapping.h \
  /usr/lib/llvm-18/include/llvm/Support/Casting.h \
@@ -243,10 +275,7 @@ CMakeFiles/nexa.dir/compiler/main.cpp.o: \
  /usr/include/x86_64-linux-gnu/bits/uio_lim.h \
  /usr/lib/llvm-18/include/llvm/IR/Value.def \
  /usr/lib/llvm-18/include/llvm/IR/Type.h \
- /usr/lib/llvm-18/include/llvm/ADT/ArrayRef.h \
- /usr/lib/llvm-18/include/llvm/ADT/SmallVector.h \
  /usr/lib/llvm-18/include/llvm/Support/TypeSize.h \
- /usr/lib/llvm-18/include/llvm/Support/raw_ostream.h \
  /home/kali/nexa/compiler/ir/LLVMContext.h \
  /usr/lib/llvm-18/include/llvm/IR/LLVMContext.h \
  /usr/lib/llvm-18/include/llvm/IR/DiagnosticHandler.h \
@@ -271,11 +300,9 @@ CMakeFiles/nexa.dir/compiler/main.cpp.o: \
  /usr/lib/llvm-18/include/llvm/ADT/APInt.h \
  /usr/lib/llvm-18/include/llvm/IR/DerivedTypes.h \
  /usr/lib/llvm-18/include/llvm/Support/TrailingObjects.h \
- /usr/lib/llvm-18/include/llvm/Support/AlignOf.h \
  /usr/lib/llvm-18/include/llvm/IR/Function.h \
  /usr/lib/llvm-18/include/llvm/ADT/DenseSet.h \
  /usr/lib/llvm-18/include/llvm/ADT/DenseMap.h \
- /usr/lib/llvm-18/include/llvm/ADT/Twine.h \
  /usr/lib/llvm-18/include/llvm/ADT/ilist_node.h \
  /usr/lib/llvm-18/include/llvm/ADT/ilist_node_base.h \
  /usr/lib/llvm-18/include/llvm/ADT/PointerIntPair.h \
@@ -302,8 +329,6 @@ CMakeFiles/nexa.dir/compiler/main.cpp.o: \
  /usr/lib/llvm-18/include/llvm/IR/CallingConv.h \
  /usr/lib/llvm-18/include/llvm/IR/GlobalObject.h \
  /usr/lib/llvm-18/include/llvm/IR/GlobalValue.h \
- /usr/lib/llvm-18/include/llvm/Support/MD5.h \
- /usr/lib/llvm-18/include/llvm/Support/Endian.h \
  /usr/lib/llvm-18/include/llvm/IR/OperandTraits.h \
  /usr/lib/llvm-18/include/llvm/IR/GlobalAlias.h \
  /usr/lib/llvm-18/include/llvm/IR/GlobalIFunc.h \
@@ -314,7 +339,6 @@ CMakeFiles/nexa.dir/compiler/main.cpp.o: \
  /usr/lib/llvm-18/include/llvm/IR/Constants.h \
  /usr/lib/llvm-18/include/llvm/ADT/APFloat.h \
  /usr/lib/llvm-18/include/llvm/ADT/FloatingPointMode.h \
- /usr/lib/llvm-18/include/llvm/ADT/StringSwitch.h \
  /usr/lib/llvm-18/include/llvm/IR/Intrinsics.h \
  /usr/lib/llvm-18/include/llvm/IR/IntrinsicEnums.inc \
  /usr/lib/llvm-18/include/llvm/IR/ConstantFold.h \
