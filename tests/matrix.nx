@@ -1,1 +1,2 @@
-<int> a = 69;
+int alpha = 77;
+print "hello world";

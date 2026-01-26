@@ -232,6 +232,7 @@ CMakeFiles/nexa.dir/compiler/ir/CodeGen.cpp.o: \
  /usr/lib/llvm-18/include/llvm/ADT/SmallVector.h \
  /usr/lib/llvm-18/include/llvm/Support/TypeSize.h \
  /usr/lib/llvm-18/include/llvm/Support/raw_ostream.h \
+ /usr/lib/llvm-18/include/llvm/IR/DerivedTypes.h \
  /home/kali/nexa/compiler/ir/LLVMContext.h \
  /usr/lib/llvm-18/include/llvm/IR/LLVMContext.h \
  /usr/lib/llvm-18/include/llvm/IR/DiagnosticHandler.h \
@@ -254,7 +255,6 @@ CMakeFiles/nexa.dir/compiler/ir/CodeGen.cpp.o: \
  /usr/lib/llvm-18/include/llvm/Support/ReverseIteration.h \
  /usr/lib/llvm-18/include/llvm/IR/DataLayout.h \
  /usr/lib/llvm-18/include/llvm/ADT/APInt.h \
- /usr/lib/llvm-18/include/llvm/IR/DerivedTypes.h \
  /usr/lib/llvm-18/include/llvm/Support/TrailingObjects.h \
  /usr/lib/llvm-18/include/llvm/Support/AlignOf.h \
  /usr/lib/llvm-18/include/llvm/IR/Function.h \
@@ -312,4 +312,25 @@ CMakeFiles/nexa.dir/compiler/ir/CodeGen.cpp.o: \
  /usr/lib/llvm-18/include/llvm/IR/Instructions.h \
  /usr/lib/llvm-18/include/llvm/IR/CFG.h \
  /usr/lib/llvm-18/include/llvm/ADT/GraphTraits.h \
- /usr/lib/llvm-18/include/llvm/IR/ValueHandle.h
+ /usr/lib/llvm-18/include/llvm/IR/ValueHandle.h \
+ /usr/lib/llvm-18/include/llvm/IR/Verifier.h \
+ /usr/lib/llvm-18/include/llvm/IR/PassManager.h \
+ /usr/lib/llvm-18/include/llvm/ADT/TinyPtrVector.h \
+ /usr/lib/llvm-18/include/llvm/IR/PassInstrumentation.h \
+ /usr/lib/llvm-18/include/llvm/ADT/Any.h \
+ /usr/lib/llvm-18/include/llvm/ADT/FunctionExtras.h \
+ /usr/lib/llvm-18/include/llvm/IR/PassManagerInternal.h \
+ /usr/lib/llvm-18/include/llvm/Support/CommandLine.h \
+ /usr/lib/llvm-18/include/llvm/Support/ManagedStatic.h \
+ /usr/include/c++/15/atomic \
+ /usr/lib/llvm-18/include/llvm/Support/StringSaver.h \
+ /usr/lib/llvm-18/include/llvm/Support/Allocator.h \
+ /usr/lib/llvm-18/include/llvm/Support/TimeProfiler.h \
+ /usr/lib/llvm-18/include/llvm/Support/Error.h \
+ /usr/lib/llvm-18/include/llvm-c/Error.h \
+ /usr/lib/llvm-18/include/llvm/Support/Debug.h \
+ /usr/lib/llvm-18/include/llvm/Support/ErrorOr.h \
+ /usr/lib/llvm-18/include/llvm/Support/Format.h \
+ /usr/lib/llvm-18/include/llvm/Support/TypeName.h \
+ /usr/include/c++/15/list /usr/include/c++/15/bits/stl_list.h \
+ /usr/include/c++/15/bits/list.tcc

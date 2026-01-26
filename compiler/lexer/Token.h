@@ -9,7 +9,7 @@ enum class TokenKind {
     KeywordInt,
     KeywordFloat,
     KeywordBool,
-    
+    Print,
     // Literals
     Identifier,
     IntegerLiteral,

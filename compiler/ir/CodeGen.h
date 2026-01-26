@@ -2,6 +2,7 @@
 #include "../ast/Ast.h"
 #include <llvm/IR/Value.h>
 #include <llvm/IR/Type.h>
+#include <llvm/IR/DerivedTypes.h>
 #include <unordered_map>
 #include <string>
 
@@ -15,8 +16,12 @@ public:
 private:
     LLVMState& llvm;
     std::unordered_map<std::string, llvm::Value*> namedValues;
-
+    
     void genVarDecl(VarDecl& decl);
+    
+    // NEW: Generate print statement
+    void genPrintStmt(PrintStmt& stmt, llvm::FunctionCallee& printfFunc);
+    
     llvm::Value* genExpression(Expr& expr);
     llvm::Type* toLLVMType(const TypeSpec& type);
 };
