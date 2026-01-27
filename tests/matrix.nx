@@ -1,2 +1,13 @@
-int alpha = 77;
+int x = 77;
 print "hello world";
+
+<a> = 1,2,3,4,5;
+
+(c);
+
+(c) = x, 10, 20, 30; 
+
+{s} = "hello";
+
+print x;
+print <a>;

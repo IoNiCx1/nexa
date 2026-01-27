@@ -1,6 +1,5 @@
 CMakeFiles/nexa.dir/compiler/lexer/Lexer.cpp.o: \
  /home/kali/nexa/compiler/lexer/Lexer.cpp /usr/include/stdc-predef.h \
- /home/kali/nexa/compiler/lexer/Lexer.h \
  /home/kali/nexa/compiler/lexer/Token.h /usr/include/c++/15/string \
  /usr/include/c++/15/bits/requires_hosted.h \
  /usr/include/x86_64-linux-gnu/c++/15/bits/c++config.h \
@@ -117,4 +116,5 @@ CMakeFiles/nexa.dir/compiler/lexer/Lexer.cpp.o: \
  /usr/include/c++/15/bits/basic_string.tcc \
  /usr/include/c++/15/bits/memory_resource.h /usr/include/c++/15/cstddef \
  /usr/include/c++/15/bits/uses_allocator.h \
- /usr/include/c++/15/bits/uses_allocator_args.h /usr/include/c++/15/tuple
+ /usr/include/c++/15/bits/uses_allocator_args.h /usr/include/c++/15/tuple \
+ /home/kali/nexa/compiler/lexer/Lexer.h

@@ -232,7 +232,9 @@ CMakeFiles/nexa.dir/compiler/ir/CodeGen.cpp.o: \
  /usr/lib/llvm-18/include/llvm/ADT/SmallVector.h \
  /usr/lib/llvm-18/include/llvm/Support/TypeSize.h \
  /usr/lib/llvm-18/include/llvm/Support/raw_ostream.h \
- /usr/lib/llvm-18/include/llvm/IR/DerivedTypes.h \
+ /usr/lib/llvm-18/include/llvm/IR/DerivedTypes.h /usr/include/c++/15/map \
+ /usr/include/c++/15/bits/stl_tree.h /usr/include/c++/15/bits/stl_map.h \
+ /usr/include/c++/15/bits/stl_multimap.h \
  /home/kali/nexa/compiler/ir/LLVMContext.h \
  /usr/lib/llvm-18/include/llvm/IR/LLVMContext.h \
  /usr/lib/llvm-18/include/llvm/IR/DiagnosticHandler.h \
