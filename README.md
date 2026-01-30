@@ -22,7 +22,7 @@ warning: overriding the module target triple with x86_64-pc-linux-gnu [-Woverrid
 1 warning generated.
                                                                                              
 ┌──(kali㉿kali)-[~/nexa]
-└─$ ./matrix_test                      
+└─$ ./matrix_test
                                                                                              
 ┌──(kali㉿kali)-[~/nexa]
 └─$ echo $?

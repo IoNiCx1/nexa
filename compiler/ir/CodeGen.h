@@ -3,11 +3,12 @@
 #include <llvm/IR/Value.h>
 #include <llvm/IR/Type.h>
 #include <llvm/IR/DerivedTypes.h>
+#include <llvm/IR/Function.h>
 #include <unordered_map>
-#include<map>
+#include <map>
 #include <string>
 
-struct LLVMState; 
+struct LLVMState;
 
 class CodeGen {
 public:
@@ -17,12 +18,19 @@ public:
 private:
     LLVMState& llvm;
     std::map<std::string, llvm::Value*> namedValues;
+    std::map<std::string, TypeSpec> namedTypes;
 
     llvm::Value* genExpression(Expr& expr);
+
     void genVarDecl(VarDecl& decl);
+    void genArrayDecl(ArrayDecl& decl);
     void genPrintStmt(PrintStmt& stmt, llvm::FunctionCallee& printfFunc);
-    // Add this line:
-    void genArrayDecl(ArrayDecl& decl); 
-    
+
+    void printArray(const std::string& name,
+                    llvm::Value* arr,
+                    const TypeSpec& type,
+                    llvm::FunctionCallee& printfFunc);
+
     llvm::Type* toLLVMType(const TypeSpec& type);
 };
+

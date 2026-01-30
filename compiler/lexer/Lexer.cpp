@@ -58,7 +58,7 @@ Token Lexer::nextToken() {
     if (c == ')') { advance(); return makeToken(TokenKind::TYPE_CHAR_CLOSE, ")"); }
     if (c == '{') { advance(); return makeToken(TokenKind::TYPE_STRING_OPEN, "{"); }
     if (c == '}') { advance(); return makeToken(TokenKind::TYPE_STRING_CLOSE, "}"); }
-    
+    if (c == '-') { advance(); return makeToken(TokenKind::Minus, "-"); }
     // --- Literals ---
     if (std::isdigit(c)) return numberLiteral();
     if (std::isalpha(c) || c == '_') return identifierOrKeyword();

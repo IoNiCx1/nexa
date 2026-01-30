@@ -103,3 +103,9 @@ struct PrintStmt : Stmt {
 struct Program : AstNode {
     std::vector<StmtPtr> statements;
 };
+struct ArrayLiteral : Expr {
+    std::vector<ExprPtr> elements;
+    explicit ArrayLiteral(std::vector<ExprPtr> elems)
+        : elements(std::move(elems)) {}
+};
+

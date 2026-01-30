@@ -11,6 +11,7 @@ enum class TokenKind {
     CharLiteral,
     BoolLiteral,
     Identifier,
+    Minus,
 
     // Keywords
     KeywordInt,
@@ -24,7 +25,7 @@ enum class TokenKind {
     Dot,        // .
     Slash,      // /
 
-    // Nexa Matrix Brackets
+    // Nexa Matrix Brackets (The naming used in the parser)
     TYPE_I32_OPEN,    // <
     TYPE_I32_CLOSE,   // >
     TYPE_I64_OPEN,    // <<

@@ -38,21 +38,17 @@ StmtPtr Parser::parseStatement() {
         expect(TokenKind::Semicolon, "Expect ';'");
         return std::make_unique<VarDecl>(name.lexeme, TypeSpec(TypeKind::Int), std::move(expr));
     }
+
     if (current.kind == TokenKind::TYPE_I32_OPEN || 
         current.kind == TokenKind::TYPE_CHAR_OPEN || 
         current.kind == TokenKind::TYPE_STRING_OPEN) {
         return parseArrayDecl();
     }
 
-    // Handle generic expressions as statements
     auto expr = parseExpression();
+    // Path handling for accidental slashes
+    while (current.kind == TokenKind::Slash) advance();
     
-    // If we just parsed a slash or part of a path, we might need to continue
-    while (current.kind == TokenKind::Slash || current.kind == TokenKind::Identifier) {
-        // This effectively ignores trailing slashes in paths that aren't strings
-        advance();
-    }
-
     expect(TokenKind::Semicolon, "Expect ';' after statement");
     return std::make_unique<PrintStmt>(std::move(expr)); 
 }
@@ -93,16 +89,32 @@ StmtPtr Parser::parseArrayDecl() {
 }
 
 ExprPtr Parser::parseExpression() {
+    // 1. Handle Unary Minus (Negative Integers)
+    if (current.kind == TokenKind::Minus) {
+        advance();
+        if (current.kind == TokenKind::IntegerLiteral) {
+            int val = -std::stoi(current.lexeme);
+            advance();
+            return std::make_unique<IntegerLiteral>(val);
+        }
+        throw std::runtime_error("Expected number after '-'");
+    }
+
+    // 2. Handle Integer Literals
     if (current.kind == TokenKind::IntegerLiteral) {
         int val = std::stoi(current.lexeme);
         advance();
         return std::make_unique<IntegerLiteral>(val);
     }
+
+    // 3. Handle String Literals
     if (current.kind == TokenKind::StringLiteral) {
         std::string val = current.lexeme;
         advance();
         return std::make_unique<StringLiteral>(val);
     }
+
+    // 4. Handle Matrix References and Dot Products
     if (current.kind == TokenKind::TYPE_I32_OPEN || 
         current.kind == TokenKind::TYPE_CHAR_OPEN || 
         current.kind == TokenKind::TYPE_STRING_OPEN) {
@@ -125,12 +137,15 @@ ExprPtr Parser::parseExpression() {
         }
         return std::make_unique<VarRef>(name.lexeme);
     }
+
+    // 5. Handle standard Variable References
     if (current.kind == TokenKind::Identifier) {
         std::string name = current.lexeme;
         advance();
         return std::make_unique<VarRef>(name);
     }
     
+    // 6. Handle Bare Slashes (Paths)
     if (current.kind == TokenKind::Slash) {
         std::string s = current.lexeme;
         advance();
