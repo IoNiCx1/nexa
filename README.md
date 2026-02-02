@@ -13,7 +13,7 @@ and follow the commands as:-
 [100%] Built target nexa
                                                                                              
 ┌──(kali㉿kali)-[~/nexa]
-└─$ ./nexa tests/matrix.nx -o matrix.ll
+└─$ ./build/nexa tests/matrix.nx -o matrix.ll
 Compiled successfully → matrix.ll
                                                                                              
 ┌──(kali㉿kali)-[~/nexa]
