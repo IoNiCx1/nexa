@@ -1,29 +1,44 @@
 #include "SemanticAnalyzer.h"
+#include "../ast/Ast.h"
 #include <stdexcept>
 
 void SemanticAnalyzer::analyze(Program& program) {
     for (auto& stmt : program.statements) {
-        // Attempt to treat the statement as a variable declaration
-        if (auto* varDecl = dynamic_cast<VarDecl*>(stmt.get())) {
-            analyzeVarDecl(*varDecl);
-        }
+        analyzeStmt(stmt.get());
     }
 }
 
-SemanticType SemanticAnalyzer::lowerType(const TypeSpec& t) {
-    // Maps the AST TypeSpec fields (kind, rows, cols) to the SemanticType
-    return SemanticType{ t.kind, t.rows, t.cols };
-}
+void SemanticAnalyzer::analyzeStmt(Stmt* stmt) {
 
-void SemanticAnalyzer::analyzeVarDecl(VarDecl& decl) {
-    const std::string& name = decl.name;
-
-    // Check for redeclaration
-    if (symbols.exists(name)) {
-        throw std::runtime_error("Semantic Error: Redeclaration of variable '" + name + "'");
+    /* print statement */
+    if (auto* p = dynamic_cast<PrintStmt*>(stmt)) {
+        analyzeExpr(p->expr.get());
+        return;
     }
 
-    // Register in symbol table
-    SemanticType declType = lowerType(decl.type);
-    symbols.insert(name, declType);
+    /* variable declaration */
+    if (auto* v = dynamic_cast<VarDecl*>(stmt)) {
+        if (v->init)
+            analyzeExpr(v->init.get());
+        return;
+    }
+
+    /* array declaration */
+    if (auto* a = dynamic_cast<ArrayDecl*>(stmt)) {
+        for (auto& e : a->elements)
+            analyzeExpr(e.get());
+        return;
+    }
+
+    throw std::runtime_error("Unsupported statement in semantic analysis");
+}
+
+void SemanticAnalyzer::analyzeExpr(Expr* expr) {
+
+    if (dynamic_cast<IntegerLiteral*>(expr)) return;
+    if (dynamic_cast<StringLiteral*>(expr)) return;   // ✅ allows: print "hello"
+    if (dynamic_cast<VarRef*>(expr)) return;
+    if (dynamic_cast<TypedRefExpr*>(expr)) return;
+
+    throw std::runtime_error("Invalid expression");
 }

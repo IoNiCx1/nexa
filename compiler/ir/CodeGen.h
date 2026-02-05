@@ -1,10 +1,6 @@
 #pragma once
 #include "../ast/Ast.h"
-#include <llvm/IR/Value.h>
-#include <llvm/IR/Type.h>
-#include <llvm/IR/DerivedTypes.h>
 #include <llvm/IR/Function.h>
-#include <unordered_map>
 #include <map>
 #include <string>
 
@@ -17,20 +13,13 @@ public:
 
 private:
     LLVMState& llvm;
-    std::map<std::string, llvm::Value*> namedValues;
-    std::map<std::string, TypeSpec> namedTypes;
 
+    /* variable storage */
+    std::map<std::string, llvm::Value*> variables;
+
+    /* variable type tracking (CRITICAL) */
+    std::map<std::string, TypeKind> varTypes;
+
+    void genStatement(Stmt& stmt, llvm::FunctionCallee printfFunc);
     llvm::Value* genExpression(Expr& expr);
-
-    void genVarDecl(VarDecl& decl);
-    void genArrayDecl(ArrayDecl& decl);
-    void genPrintStmt(PrintStmt& stmt, llvm::FunctionCallee& printfFunc);
-
-    void printArray(const std::string& name,
-                    llvm::Value* arr,
-                    const TypeSpec& type,
-                    llvm::FunctionCallee& printfFunc);
-
-    llvm::Type* toLLVMType(const TypeSpec& type);
 };
-
