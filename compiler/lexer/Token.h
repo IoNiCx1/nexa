@@ -1,43 +1,39 @@
-#ifndef TOKEN_H
-#define TOKEN_H
-
+#pragma once
 #include <string>
 
 enum class TokenKind {
-    // Literals
+    /* literals */
     IntegerLiteral,
-    FloatLiteral,
     StringLiteral,
     CharLiteral,
-    BoolLiteral,
     Identifier,
-    Minus,
 
-    // Keywords
+    /* keywords */
     KeywordInt,
-    KeywordFloat,
     Print,
 
-    // Operators and Punctuation
+    /* operators */
+    Plus,       // +
+    Minus,      // -
+    Star,       // *
+    Slash,      // /
+    Percent,    // %
+
     Assign,     // =
     Comma,      // ,
     Semicolon,  // ;
     Dot,        // .
-    Slash,      // /
 
-    // Nexa Matrix Brackets (The naming used in the parser)
+    /* brackets */
     TYPE_I32_OPEN,    // <
     TYPE_I32_CLOSE,   // >
-    TYPE_I64_OPEN,    // <<
-    TYPE_I64_CLOSE,   // >>
     TYPE_CHAR_OPEN,   // (
     TYPE_CHAR_CLOSE,  // )
     TYPE_STRING_OPEN, // {
     TYPE_STRING_CLOSE,// }
 
-    // System
-    Invalid,
-    EndOfFile
+    EndOfFile,
+    Invalid
 };
 
 struct Token {
@@ -46,5 +42,3 @@ struct Token {
     int line;
     int column;
 };
-
-#endif

@@ -1,15 +1,22 @@
 #include "Parser.h"
 #include <stdexcept>
 
-/* ================= CONSTRUCTOR ================= */
+/* ================= SETUP ================= */
 
-Parser::Parser(Lexer& l) : lexer(l) { advance(); }
+Parser::Parser(Lexer& l) : lexer(l) {
+    advance();
+}
 
-void Parser::advance() { current = lexer.nextToken(); }
+void Parser::advance() {
+    current = lexer.nextToken();
+}
 
 Token Parser::expect(TokenKind kind, const std::string& msg) {
-    if (current.kind != kind)
-        throw std::runtime_error(msg + " (found '" + current.lexeme + "')");
+    if (current.kind != kind) {
+        throw std::runtime_error(msg.empty()
+            ? "Unexpected token: " + current.lexeme
+            : msg);
+    }
     Token t = current;
     advance();
     return t;
@@ -18,133 +25,191 @@ Token Parser::expect(TokenKind kind, const std::string& msg) {
 /* ================= PROGRAM ================= */
 
 std::unique_ptr<Program> Parser::parseProgram() {
-    auto p = std::make_unique<Program>();
-    while (current.kind != TokenKind::EndOfFile)
-        p->statements.push_back(parseStatement());
-    return p;
+    auto program = std::make_unique<Program>();
+    while (current.kind != TokenKind::EndOfFile) {
+        program->statements.push_back(parseStatement());
+    }
+    return program;
 }
 
 /* ================= STATEMENTS ================= */
 
 StmtPtr Parser::parseStatement() {
-
-    if (current.kind == TokenKind::Print) {
-        advance();
-        auto e = parseExpression();
-        expect(TokenKind::Semicolon, "Expect ';'");
-        return std::make_unique<PrintStmt>(std::move(e));
+    if (current.kind == TokenKind::KeywordInt) {
+        return parseVarDecl();
     }
 
-    if (current.kind == TokenKind::KeywordInt) {
-        advance();
-        auto name = expect(TokenKind::Identifier, "Expect name");
-        expect(TokenKind::Assign, "Expect '='");
-        auto e = parseExpression();
-        expect(TokenKind::Semicolon, "Expect ';'");
-        return std::make_unique<VarDecl>(
-            name.lexeme, TypeSpec(TypeKind::Int), std::move(e));
+    if (current.kind == TokenKind::Print) {
+        return parsePrintStatement();
     }
 
     if (current.kind == TokenKind::TYPE_I32_OPEN ||
-        current.kind == TokenKind::TYPE_STRING_OPEN)
+        current.kind == TokenKind::TYPE_CHAR_OPEN ||
+        current.kind == TokenKind::TYPE_STRING_OPEN) {
         return parseArrayDecl();
+    }
 
-    auto e = parseExpression();
-    expect(TokenKind::Semicolon, "Expect ';'");
-    return std::make_unique<ExprStmt>(std::move(e));
+    throw std::runtime_error("Invalid statement");
 }
 
-/* ================= ARRAY / STRING DECL ================= */
+StmtPtr Parser::parseVarDecl() {
+    expect(TokenKind::KeywordInt);
+    Token name = expect(TokenKind::Identifier, "Expected variable name");
+    expect(TokenKind::Assign, "Expected '='");
+
+    ExprPtr init = parseExpression();
+    expect(TokenKind::Semicolon, "Expected ';'");
+
+    return std::make_unique<VarDecl>(
+        name.lexeme,
+        TypeSpec(TypeKind::Int),
+        std::move(init)
+    );
+}
+
+StmtPtr Parser::parsePrintStatement() {
+    expect(TokenKind::Print);
+    ExprPtr expr = parseExpression();
+    expect(TokenKind::Semicolon, "Expected ';'");
+    return std::make_unique<PrintStmt>(std::move(expr));
+}
+
+/* ================= ARRAY DECL ================= */
 
 StmtPtr Parser::parseArrayDecl() {
-
-    TypeKind type;
+    TokenKind open = current.kind;
+    TypeKind tkind;
     TokenKind close;
 
-    if (current.kind == TokenKind::TYPE_I32_OPEN) {
-        type = TypeKind::IntArray;
+    if (open == TokenKind::TYPE_I32_OPEN) {
+        tkind = TypeKind::IntArray;
         close = TokenKind::TYPE_I32_CLOSE;
+    } else if (open == TokenKind::TYPE_CHAR_OPEN) {
+        tkind = TypeKind::CharArray;
+        close = TokenKind::TYPE_CHAR_CLOSE;
     } else {
-        type = TypeKind::String;
+        tkind = TypeKind::StringArray;
         close = TokenKind::TYPE_STRING_CLOSE;
     }
 
     advance();
-    auto name = expect(TokenKind::Identifier, "Expect name");
-    expect(close, "Expect closing");
-
-    expect(TokenKind::Assign, "Expect '='");
-
-    if (type == TypeKind::String) {
-        auto v = parseExpression();
-        expect(TokenKind::Semicolon, "Expect ';'");
-        return std::make_unique<VarDecl>(
-            name.lexeme, TypeSpec(TypeKind::String), std::move(v));
-    }
+    Token name = expect(TokenKind::Identifier, "Expected array name");
+    expect(close, "Expected closing bracket");
 
     std::vector<ExprPtr> elems;
-    do {
-        elems.push_back(parseExpression());
-        if (current.kind == TokenKind::Comma) advance();
-        else break;
-    } while (true);
 
-    expect(TokenKind::Semicolon, "Expect ';'");
+    if (current.kind == TokenKind::Assign) {
+        advance();
+        do {
+            elems.push_back(parseExpression());
+            if (current.kind != TokenKind::Comma) break;
+            advance();
+        } while (true);
+    }
+
+    expect(TokenKind::Semicolon, "Expected ';'");
+
     return std::make_unique<ArrayDecl>(
-        name.lexeme, TypeSpec(TypeKind::IntArray), std::move(elems));
+        name.lexeme,
+        TypeSpec(tkind),
+        std::move(elems)
+    );
 }
 
-/* ================= EXPRESSIONS ================= */
+/* ================= PRATT PARSER ================= */
 
-ExprPtr Parser::parseExpression() {
+ExprPtr Parser::parseExpression(int minBp) {
+    ExprPtr lhs;
 
-    /* unary minus */
+    /* prefix */
     if (current.kind == TokenKind::Minus) {
         advance();
-        auto val = expect(
-            TokenKind::IntegerLiteral,
-            "Expected number after '-'");
-        int v = -std::stoi(val.lexeme);
-        return std::make_unique<IntegerLiteral>(v);
+        int bp = prefixBindingPower(TokenKind::Minus);
+        ExprPtr rhs = parseExpression(bp);
+        lhs = std::make_unique<UnaryExpr>(UnaryOp::Negate, std::move(rhs));
+    } else {
+        lhs = parsePrimary();
     }
 
+    /* infix loop */
+    while (true) {
+        int bp = infixBindingPower(current.kind);
+        if (bp < minBp) break;
+
+        TokenKind opTok = current.kind;
+        advance();
+
+        ExprPtr rhs = parseExpression(bp + 1);
+        lhs = std::make_unique<BinaryExpr>(
+            tokenToBinaryOp(opTok),
+            std::move(lhs),
+            std::move(rhs)
+        );
+    }
+
+    return lhs;
+}
+
+/* ================= PRIMARY ================= */
+
+ExprPtr Parser::parsePrimary() {
     if (current.kind == TokenKind::IntegerLiteral) {
-        int v = std::stoi(current.lexeme);
+        int val = std::stoi(current.lexeme);
         advance();
-        return std::make_unique<IntegerLiteral>(v);
-    }
-
-    if (current.kind == TokenKind::StringLiteral) {
-        std::string v = current.lexeme;
-        advance();
-        return std::make_unique<StringLiteral>(v);
-    }
-
-    if (current.kind == TokenKind::TYPE_I32_OPEN ||
-        current.kind == TokenKind::TYPE_STRING_OPEN) {
-
-        TypeKind type =
-            current.kind == TokenKind::TYPE_I32_OPEN
-                ? TypeKind::IntArray
-                : TypeKind::String;
-
-        TokenKind close =
-            current.kind == TokenKind::TYPE_I32_OPEN
-                ? TokenKind::TYPE_I32_CLOSE
-                : TokenKind::TYPE_STRING_CLOSE;
-
-        advance();
-        auto name = expect(TokenKind::Identifier, "Expect name");
-        expect(close, "Expect closing");
-
-        return std::make_unique<TypedRefExpr>(name.lexeme, type);
+        return std::make_unique<IntegerLiteral>(val);
     }
 
     if (current.kind == TokenKind::Identifier) {
-        std::string n = current.lexeme;
+        std::string name = current.lexeme;
         advance();
-        return std::make_unique<VarRef>(n);
+        return std::make_unique<VarRef>(name);
+    }
+
+    if (current.kind == TokenKind::StringLiteral) {
+        std::string s = current.lexeme;
+        advance();
+        return std::make_unique<StringLiteral>(s);
+    }
+
+    if (current.kind == TokenKind::TYPE_CHAR_OPEN) {
+        advance();
+        ExprPtr expr = parseExpression();
+        expect(TokenKind::TYPE_CHAR_CLOSE, "Expected ')'");
+        return expr;
     }
 
     throw std::runtime_error("Invalid expression");
+}
+
+/* ================= BINDING POWERS ================= */
+
+int Parser::prefixBindingPower(TokenKind kind) const {
+    if (kind == TokenKind::Minus) return 7;
+    return 0;
+}
+
+int Parser::infixBindingPower(TokenKind kind) const {
+    switch (kind) {
+        case TokenKind::Star:
+        case TokenKind::Slash:
+        case TokenKind::Percent:
+            return 5;
+        case TokenKind::Plus:
+        case TokenKind::Minus:
+            return 3;
+        default:
+            return -1;
+    }
+}
+
+BinaryOp Parser::tokenToBinaryOp(TokenKind kind) const {
+    switch (kind) {
+        case TokenKind::Plus:    return BinaryOp::Add;
+        case TokenKind::Minus:   return BinaryOp::Sub;
+        case TokenKind::Star:    return BinaryOp::Mul;
+        case TokenKind::Slash:   return BinaryOp::Div;
+        case TokenKind::Percent:return BinaryOp::Mod;
+        default:
+            throw std::runtime_error("Invalid binary operator");
+    }
 }

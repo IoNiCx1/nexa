@@ -1,100 +1,177 @@
 #include "CodeGen.h"
+#include "LLVMContext.h"
+
+#include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Constants.h>
-#include <llvm/IR/Function.h>
 #include <llvm/IR/Verifier.h>
+#include <llvm/IR/DerivedTypes.h>
+
+#include <stdexcept>
+#include <vector>
+
+/* ================= SETUP ================= */
 
 CodeGen::CodeGen(LLVMState& state) : llvm(state) {}
 
-llvm::Type* CodeGen::toLLVMType(const TypeSpec& type) {
-    using namespace llvm;
-
-    switch (type.kind) {
-        case TypeKind::I32:  return Type::getInt32Ty(llvm.context);
-        case TypeKind::I64:  return Type::getInt64Ty(llvm.context);
-        case TypeKind::F32:  return Type::getFloatTy(llvm.context);
-        case TypeKind::F64:  return Type::getDoubleTy(llvm.context);
-        case TypeKind::CHAR: return Type::getInt8Ty(llvm.context);
-        case TypeKind::BOOL: return Type::getInt1Ty(llvm.context);
-        case TypeKind::STRING:
-            return Type::getInt8PtrTy(llvm.context);
-    }
-    return nullptr;
+llvm::Type* CodeGen::intType() const {
+    return llvm::Type::getInt32Ty(*llvm.context);
 }
+
+/* ================= PROGRAM ================= */
 
 void CodeGen::generate(Program& program) {
-    using namespace llvm;
+    llvm::FunctionType* mainType =
+        llvm::FunctionType::get(intType(), false);
 
-    // int main()
-    FunctionType* mainType =
-        FunctionType::get(Type::getInt32Ty(llvm.context), false);
+    llvm::Function* mainFunc =
+        llvm::Function::Create(
+            mainType,
+            llvm::Function::ExternalLinkage,
+            "main",
+            llvm.module.get()
+        );
 
-    Function* mainFunc =
-        Function::Create(mainType, Function::ExternalLinkage,
-                         "main", llvm.module.get());
+    llvm::BasicBlock* entry =
+        llvm::BasicBlock::Create(*llvm.context, "entry", mainFunc);
 
-    BasicBlock* entry =
-        BasicBlock::Create(llvm.context, "entry", mainFunc);
+    llvm.builder->SetInsertPoint(entry);
 
-    llvm.builder.SetInsertPoint(entry);
+    /* printf */
+    llvm::FunctionType* printfType =
+        llvm::FunctionType::get(
+            llvm::Type::getInt32Ty(*llvm.context),
+            { llvm::PointerType::get(*llvm.context, 0) },
+            true
+        );
 
+    llvm::FunctionCallee printfFunc =
+        llvm.module->getOrInsertFunction("printf", printfType);
+
+    /* statements */
     for (auto& stmt : program.statements) {
-        genDeclaration(static_cast<Declaration&>(*stmt));
+        if (auto* v = dynamic_cast<VarDecl*>(stmt.get())) {
+            genVarDecl(*v);
+        } else if (auto* a = dynamic_cast<ArrayDecl*>(stmt.get())) {
+            genArrayDecl(*a);
+        } else if (auto* p = dynamic_cast<PrintStmt*>(stmt.get())) {
+            genPrintStmt(*p, printfFunc);
+        }
     }
 
-    llvm.builder.CreateRet(
-        ConstantInt::get(Type::getInt32Ty(llvm.context), 0));
+    llvm.builder->CreateRet(
+        llvm::ConstantInt::get(intType(), 0)
+    );
 
-    verifyFunction(*mainFunc);
+    llvm::verifyFunction(*mainFunc);
 }
 
-void CodeGen::genDeclaration(Declaration& decl) {
-    llvm::Type* llvmType = toLLVMType(decl.type);
+/* ================= STATEMENTS ================= */
 
-    for (size_t i = 0; i < decl.names.size(); ++i) {
-        const std::string& name = decl.names[i];
+void CodeGen::genVarDecl(VarDecl& decl) {
+    llvm::AllocaInst* alloca =
+        llvm.builder->CreateAlloca(intType(), nullptr, decl.name);
 
-        llvm::AllocaInst* alloc =
-            llvm.builder.CreateAlloca(llvmType, nullptr, name);
+    if (decl.initializer) {
+        llvm::Value* initVal = genExpression(*decl.initializer);
+        llvm.builder->CreateStore(initVal, alloca);
+    }
 
-        llvm::Value* value = genExpression(*decl.values[i]);
-        llvm.builder.CreateStore(value, alloc);
+    namedValues[decl.name] = alloca;
+}
 
-        namedValues[name] = alloc;
+void CodeGen::genArrayDecl(ArrayDecl& decl) {
+    size_t count = decl.elements.empty() ? 1 : decl.elements.size();
+
+    llvm::ArrayType* arrType =
+        llvm::ArrayType::get(intType(), count);
+
+    llvm::AllocaInst* alloca =
+        llvm.builder->CreateAlloca(arrType, nullptr, decl.name);
+
+    namedValues[decl.name] = alloca;
+
+    for (size_t i = 0; i < decl.elements.size(); ++i) {
+        llvm::Value* elem =
+            genExpression(*decl.elements[i]);
+
+        llvm::Value* ptr =
+            llvm.builder->CreateInBoundsGEP(
+                arrType,
+                alloca,
+                {
+                    llvm.builder->getInt32(0),
+                    llvm.builder->getInt32(i)
+                }
+            );
+
+        llvm.builder->CreateStore(elem, ptr);
     }
 }
+
+void CodeGen::genPrintStmt(
+    PrintStmt& stmt,
+    llvm::FunctionCallee& printfFunc
+) {
+    llvm::Value* val = genExpression(*stmt.expr);
+
+    llvm::Value* fmt =
+        llvm.builder->CreateGlobalStringPtr("%d\n");
+
+    llvm.builder->CreateCall(printfFunc, { fmt, val });
+}
+
+/* ================= EXPRESSIONS ================= */
 
 llvm::Value* CodeGen::genExpression(Expr& expr) {
-    using namespace llvm;
 
-    if (auto* i = dynamic_cast<IntLiteral*>(&expr)) {
-        return ConstantInt::get(
-            Type::getInt32Ty(llvm.context), i->value);
+    /* integer literal */
+    if (auto* i = dynamic_cast<IntegerLiteral*>(&expr)) {
+        return llvm::ConstantInt::get(
+            intType(), i->value, true
+        );
     }
 
-    if (auto* f = dynamic_cast<FloatLiteral*>(&expr)) {
-        return ConstantFP::get(
-            Type::getDoubleTy(llvm.context), f->value);
+    /* variable reference */
+    if (auto* v = dynamic_cast<VarRef*>(&expr)) {
+        auto it = namedValues.find(v->name);
+        if (it == namedValues.end())
+            throw std::runtime_error("Undefined variable: " + v->name);
+
+        return llvm.builder->CreateLoad(
+            intType(),
+            it->second,
+            v->name
+        );
     }
 
-    if (auto* b = dynamic_cast<BoolLiteral*>(&expr)) {
-        return ConstantInt::get(
-            Type::getInt1Ty(llvm.context), b->value);
+    /* unary expression */
+    if (auto* u = dynamic_cast<UnaryExpr*>(&expr)) {
+        llvm::Value* operand = genExpression(*u->expr);
+
+        switch (u->op) {
+            case UnaryOp::Negate:
+                return llvm.builder->CreateNeg(operand);
+        }
     }
 
-    if (auto* c = dynamic_cast<CharLiteral*>(&expr)) {
-        return ConstantInt::get(
-            Type::getInt8Ty(llvm.context), c->value);
+    /* binary expression */
+    if (auto* b = dynamic_cast<BinaryExpr*>(&expr)) {
+        llvm::Value* lhs = genExpression(*b->lhs);
+        llvm::Value* rhs = genExpression(*b->rhs);
+
+        switch (b->op) {
+            case BinaryOp::Add:
+                return llvm.builder->CreateAdd(lhs, rhs);
+            case BinaryOp::Sub:
+                return llvm.builder->CreateSub(lhs, rhs);
+            case BinaryOp::Mul:
+                return llvm.builder->CreateMul(lhs, rhs);
+            case BinaryOp::Div:
+                return llvm.builder->CreateSDiv(lhs, rhs);
+            case BinaryOp::Mod:
+                return llvm.builder->CreateSRem(lhs, rhs);
+        }
     }
 
-    if (auto* s = dynamic_cast<StringLiteral*>(&expr)) {
-        return llvm.builder.CreateGlobalStringPtr(s->value);
-    }
-
-    if (auto* v = dynamic_cast<VariableRef*>(&expr)) {
-        return llvm.builder.CreateLoad(
-            namedValues[v->name]->getType()->getPointerElementType(),
-            namedValues[v->name]);
-    }
-
-    return nullptr;
+    throw std::runtime_error("Unsupported expression in codegen");
 }

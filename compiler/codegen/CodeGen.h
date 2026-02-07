@@ -1,8 +1,11 @@
 #pragma once
-#include "LLVMContext.h"
 #include "../ast/Ast.h"
-#include <unordered_map>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/Function.h>
+#include <map>
 #include <string>
+
+struct LLVMState;
 
 class CodeGen {
 public:
@@ -12,10 +15,17 @@ public:
 
 private:
     LLVMState& llvm;
-    std::unordered_map<std::string, llvm::Value*> namedValues;
 
-    void genDeclaration(Declaration& decl);
+    std::map<std::string, llvm::Value*> namedValues;
+
+    /* statements */
+    void genVarDecl(VarDecl& decl);
+    void genArrayDecl(ArrayDecl& decl);
+    void genPrintStmt(PrintStmt& stmt, llvm::FunctionCallee& printfFunc);
+
+    /* expressions */
     llvm::Value* genExpression(Expr& expr);
 
-    llvm::Type* toLLVMType(const TypeSpec& type);
+    /* helpers */
+    llvm::Type* intType() const;
 };

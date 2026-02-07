@@ -1,5 +1,6 @@
 #pragma once
 #include "../ast/Ast.h"
+#include <llvm/IR/Value.h>
 #include <llvm/IR/Function.h>
 #include <map>
 #include <string>
@@ -8,18 +9,20 @@ struct LLVMState;
 
 class CodeGen {
 public:
-    CodeGen(LLVMState& state);
+    explicit CodeGen(LLVMState& state);
+
     void generate(Program& program);
 
 private:
     LLVMState& llvm;
+    std::map<std::string, llvm::Value*> locals;
 
-    /* variable storage */
-    std::map<std::string, llvm::Value*> variables;
+    /* statements */
+    void genVarDecl(VarDecl& decl);
+    void genPrintStmt(PrintStmt& stmt, llvm::FunctionCallee printfFunc);
 
-    /* variable type tracking (CRITICAL) */
-    std::map<std::string, TypeKind> varTypes;
+    /* expressions */
+    llvm::Value* genExpr(Expr& expr);
 
-    void genStatement(Stmt& stmt, llvm::FunctionCallee printfFunc);
-    llvm::Value* genExpression(Expr& expr);
+    llvm::Type* intTy() const;
 };
