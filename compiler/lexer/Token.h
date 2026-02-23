@@ -4,47 +4,43 @@
 #include <string>
 
 enum class TokenKind {
-    // Literals
-    IntegerLiteral,
-    FloatLiteral,
-    StringLiteral,
-    CharLiteral,
-    BoolLiteral,
-    Identifier,
-    Minus,
 
-    // Keywords
-    KeywordInt,
-    KeywordFloat,
-    Print,
+  // Literals
+  IntegerLiteral,
+  FloatLiteral,
+  StringLiteral,
+  Identifier,
 
-    // Operators and Punctuation
-    Assign,     // =
-    Comma,      // ,
-    Semicolon,  // ;
-    Dot,        // .
-    Slash,      // /
+  // Type Keywords
+  Int,
+  Double,
+  String,
 
-    // Nexa Matrix Brackets (The naming used in the parser)
-    TYPE_I32_OPEN,    // <
-    TYPE_I32_CLOSE,   // >
-    TYPE_I64_OPEN,    // <<
-    TYPE_I64_CLOSE,   // >>
-    TYPE_CHAR_OPEN,   // (
-    TYPE_CHAR_CLOSE,  // )
-    TYPE_STRING_OPEN, // {
-    TYPE_STRING_CLOSE,// }
+  // Other Keywords
+  Print,
 
-    // System
-    Invalid,
-    EndOfFile
+  // Operators
+  Plus,
+  Minus,
+  Star,
+  Slash,
+  Assign,
+
+  // Punctuation
+  LeftParen,
+  RightParen,
+  Semicolon,
+
+  // System
+  END,
+  Invalid
 };
 
 struct Token {
-    TokenKind kind;
-    std::string lexeme;
-    int line;
-    int column;
+  TokenKind kind;
+  std::string lexeme;
+  int line;
+  int column;
 };
 
 #endif

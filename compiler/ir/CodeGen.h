@@ -1,36 +1,50 @@
-#pragma once
+#ifndef NEXA_CODEGEN_H
+#define NEXA_CODEGEN_H
+
 #include "../ast/Ast.h"
-#include <llvm/IR/Value.h>
-#include <llvm/IR/Type.h>
-#include <llvm/IR/DerivedTypes.h>
-#include <llvm/IR/Function.h>
-#include <unordered_map>
+#include "../sema/Type.h"
+
+#include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Verifier.h>
+
 #include <map>
+#include <memory>
 #include <string>
 
-struct LLVMState;
+namespace nexa {
 
 class CodeGen {
 public:
-    CodeGen(LLVMState& state);
-    void generate(Program& program);
+    CodeGen();
+
+    void generate(Program &program);
+
+    llvm::Module* getModule();
 
 private:
-    LLVMState& llvm;
+    llvm::LLVMContext context;
+    std::unique_ptr<llvm::Module> module;
+    llvm::IRBuilder<> builder;
+
+    llvm::Function *printfFunc;
+
     std::map<std::string, llvm::Value*> namedValues;
-    std::map<std::string, TypeSpec> namedTypes;
 
-    llvm::Value* genExpression(Expr& expr);
+    llvm::Type* getLLVMType(const Type &type);
 
-    void genVarDecl(VarDecl& decl);
-    void genArrayDecl(ArrayDecl& decl);
-    void genPrintStmt(PrintStmt& stmt, llvm::FunctionCallee& printfFunc);
+    llvm::Value* generateExpr(Expr *expr);
 
-    void printArray(const std::string& name,
-                    llvm::Value* arr,
-                    const TypeSpec& type,
-                    llvm::FunctionCallee& printfFunc);
+    void generateStmt(Stmt *stmt);
 
-    llvm::Type* toLLVMType(const TypeSpec& type);
+    llvm::Value* promoteIfNeeded(
+        llvm::Value *value,
+        const Type &from,
+        const Type &to
+    );
 };
 
+} // namespace nexa
+
+#endif

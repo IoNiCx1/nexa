@@ -162,6 +162,7 @@ nexa: CMakeFiles/nexa.dir/build.make
 nexa: CMakeFiles/nexa.dir/compiler_depend.ts
 nexa: /usr/lib/llvm-18/lib/libLLVMCore.a
 nexa: /usr/lib/llvm-18/lib/libLLVMSupport.a
+nexa: /usr/lib/llvm-18/lib/libLLVMIRReader.a
 nexa: /usr/lib/llvm-18/lib/libLLVMX86CodeGen.a
 nexa: /usr/lib/llvm-18/lib/libLLVMX86AsmParser.a
 nexa: /usr/lib/llvm-18/lib/libLLVMX86Desc.a
@@ -190,8 +191,8 @@ nexa: /usr/lib/llvm-18/lib/libLLVMDebugInfoMSF.a
 nexa: /usr/lib/llvm-18/lib/libLLVMDebugInfoBTF.a
 nexa: /usr/lib/llvm-18/lib/libLLVMObject.a
 nexa: /usr/lib/llvm-18/lib/libLLVMIRReader.a
-nexa: /usr/lib/llvm-18/lib/libLLVMBitReader.a
 nexa: /usr/lib/llvm-18/lib/libLLVMAsmParser.a
+nexa: /usr/lib/llvm-18/lib/libLLVMBitReader.a
 nexa: /usr/lib/llvm-18/lib/libLLVMCore.a
 nexa: /usr/lib/llvm-18/lib/libLLVMRemarks.a
 nexa: /usr/lib/llvm-18/lib/libLLVMBitstreamReader.a

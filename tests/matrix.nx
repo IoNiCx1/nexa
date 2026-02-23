@@ -1,14 +1,10 @@
-int x = 77;
-print "hello world";
+var x = 10;
+var y = 20;
 
-<a> = 1,2,3,4,5,90,767,67,-12;
+var sum = x + y;
+print sum;
 
-(c);
+var t = <2,2>(1,2,3,4);
+print t;
 
-(c) = x, 10, 20, 30; 
-
-{s} = "hello";
-
-print x;
-print <a>;
-print s;
+print "Hello World";

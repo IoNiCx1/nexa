@@ -1,28 +1,40 @@
-#pragma once
-#include "../lexer/Lexer.h"
+#ifndef NEXA_PARSER_H
+#define NEXA_PARSER_H
+
 #include "../ast/Ast.h"
+#include "../lexer/Token.h"
 #include <memory>
+#include <vector>
+
+namespace nexa {
 
 class Parser {
 public:
-    explicit Parser(Lexer& lexer);
+  Parser(const std::vector<Token> &tokens);
 
-    std::unique_ptr<Program> parseProgram();
+  std::unique_ptr<Program> parseProgram();
 
 private:
-    Lexer& lexer;
-    Token current;
+  const std::vector<Token> &tokens;
+  size_t current;
 
-    void advance();
-    Token expect(TokenKind kind, const std::string& msg = "");
+  bool match(TokenKind kind);
+  bool check(TokenKind kind);
+  Token advance();
+  Token peek();
+  Token previous();
+  bool isAtEnd();
 
-    StmtPtr parseStatement();
-    StmtPtr parseVarDecl();
-    StmtPtr parseArrayDecl();
-    StmtPtr parsePrintStatement();
+  std::unique_ptr<Stmt> parseStatement();
+  std::unique_ptr<Stmt> parseVarDecl();
+  std::unique_ptr<Stmt> parsePrint();
 
-    ExprPtr parseExpression();
-    std::vector<ExprPtr> parseArrayLiteral();
+  std::unique_ptr<Expr> parseExpression(int precedence = 0);
+  std::unique_ptr<Expr> parsePrimary();
 
-    TypeSpec parseType();
+  int getPrecedence(TokenKind kind);
 };
+
+} // namespace nexa
+
+#endif

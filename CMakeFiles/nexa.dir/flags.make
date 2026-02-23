@@ -4,7 +4,7 @@
 # compile CXX with /usr/bin/c++
 CXX_DEFINES = 
 
-CXX_INCLUDES = -I/usr/lib/llvm-18/include -I/home/kali/nexa/compiler -I/home/kali/nexa/compiler/lexer -I/home/kali/nexa/compiler/parser -I/home/kali/nexa/compiler/ast -I/home/kali/nexa/compiler/sema -I/home/kali/nexa/compiler/ir -I/home/kali/nexa/runtime
+CXX_INCLUDES = -I/usr/lib/llvm-18/include -I/home/kali/nexa/compiler -I/home/kali/nexa/compiler/lexer -I/home/kali/nexa/compiler/parser -I/home/kali/nexa/compiler/ast -I/home/kali/nexa/compiler/sema -I/home/kali/nexa/compiler/ir
 
 CXX_FLAGS = -std=gnu++17   -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS
 

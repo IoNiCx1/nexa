@@ -1,0 +1,3 @@
+var x = 77;
+var y = 10;
+var z =x + y;

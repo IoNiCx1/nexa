@@ -1,21 +1,26 @@
-#pragma once
+#ifndef NEXA_SEMANTIC_ANALYZER_H
+#define NEXA_SEMANTIC_ANALYZER_H
 
-#include "SymbolTable.h"
 #include "../ast/Ast.h"
+#include "../sema/Type.h"
+#include <map>
+#include <string>
+
+namespace nexa {
 
 class SemanticAnalyzer {
 public:
-    SemanticAnalyzer() = default;
-
-    // Entry point: walks the AST
-    void analyze(Program& program);
+  bool analyze(Program &program);
 
 private:
-    SymbolTable symbols;
+  std::map<std::string, Type> symbolTable;
 
-    // Helper to map AST types to Sema types
-    SemanticType lowerType(const TypeSpec& t);
+  Type analyzeExpr(Expr *expr);
+  bool analyzeStmt(Stmt *stmt);
 
-    // Analysis for specific nodes
-    void analyzeVarDecl(VarDecl& decl);
+  Type promoteNumeric(const Type &left, const Type &right);
 };
+
+} // namespace nexa
+
+#endif

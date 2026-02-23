@@ -1,111 +1,109 @@
-#pragma once
+#ifndef NEXA_AST_H
+#define NEXA_AST_H
+
+#include "../sema/Type.h"
 #include <memory>
 #include <string>
 #include <vector>
 
-enum class TypeKind {
-    None,
-    Int,
-    Float,
-    Bool,
-    Char,
-    String,
+namespace nexa {
 
-    IntArray,
-    CharArray,
-    StringArray
+class ASTNode {
+public:
+  virtual ~ASTNode() = default;
 };
 
-struct TypeSpec {
-    TypeKind kind;
-    int rows;
-    int cols;
+/* ============================
+   EXPRESSIONS
+   ============================ */
 
-    TypeSpec() : kind(TypeKind::None), rows(1), cols(1) {}
-    TypeSpec(TypeKind k, int r = 1, int c = 1)
-        : kind(k), rows(r), cols(c) {}
+class Expr : public ASTNode {
+public:
+  Type inferredType; // Filled by Semantic Analyzer
+  virtual ~Expr() = default;
 };
 
-struct AstNode {
-    virtual ~AstNode() = default;
+class IntegerLiteral : public Expr {
+public:
+  int value;
+  explicit IntegerLiteral(int v) : value(v) {}
 };
 
-/* ================= EXPRESSIONS ================= */
-
-struct Expr : AstNode {
-    virtual ~Expr() = default;
+class DoubleLiteral : public Expr {
+public:
+  double value;
+  explicit DoubleLiteral(double v) : value(v) {}
 };
 
-using ExprPtr = std::unique_ptr<Expr>;
-
-struct IntegerLiteral : Expr {
-    int value;
-    explicit IntegerLiteral(int v) : value(v) {}
+class StringLiteral : public Expr {
+public:
+  std::string value;
+  explicit StringLiteral(const std::string &v) : value(v) {}
 };
 
-struct StringLiteral : Expr {
-    std::string value;
-    explicit StringLiteral(std::string v) : value(std::move(v)) {}
+class VariableExpr : public Expr {
+public:
+  std::string name;
+  explicit VariableExpr(const std::string &n) : name(n) {}
 };
 
-struct CharLiteral : Expr {
-    char value;
-    explicit CharLiteral(char v) : value(v) {}
+class UnaryExpr : public Expr {
+public:
+  std::string op;
+  std::unique_ptr<Expr> operand;
+
+  UnaryExpr(const std::string &o, std::unique_ptr<Expr> expr)
+      : op(o), operand(std::move(expr)) {}
 };
 
-struct VarRef : Expr {
-    std::string name;
-    explicit VarRef(std::string n) : name(std::move(n)) {}
+class BinaryExpr : public Expr {
+public:
+  std::string op;
+  std::unique_ptr<Expr> left;
+  std::unique_ptr<Expr> right;
+
+  BinaryExpr(std::unique_ptr<Expr> l, const std::string &o,
+             std::unique_ptr<Expr> r)
+      : op(o), left(std::move(l)), right(std::move(r)) {}
 };
 
-// <a>.<b>
-struct DotExpr : Expr {
-    ExprPtr lhs;
-    ExprPtr rhs;
-    DotExpr(ExprPtr l, ExprPtr r)
-        : lhs(std::move(l)), rhs(std::move(r)) {}
+/* ============================
+   STATEMENTS
+   ============================ */
+
+class Stmt : public ASTNode {
+public:
+  virtual ~Stmt() = default;
 };
 
-/* ================= STATEMENTS ================= */
+class VarDeclStmt : public Stmt {
+public:
+  Type declaredType;
+  std::string name;
+  std::unique_ptr<Expr> initializer;
 
-struct Stmt : AstNode {
-    virtual ~Stmt() = default;
+  VarDeclStmt(const Type &type, const std::string &n,
+              std::unique_ptr<Expr> init)
+      : declaredType(type), name(n), initializer(std::move(init)) {}
 };
 
-using StmtPtr = std::unique_ptr<Stmt>;
+class PrintStmt : public Stmt {
+public:
+  std::unique_ptr<Expr> expression;
 
-struct VarDecl : Stmt {
-    std::string name;
-    TypeSpec type;
-    ExprPtr initializer;
-
-    VarDecl(std::string n, TypeSpec t, ExprPtr init)
-        : name(std::move(n)), type(t), initializer(std::move(init)) {}
+  explicit PrintStmt(std::unique_ptr<Expr> expr)
+      : expression(std::move(expr)) {}
 };
 
-// <a> = 1,2,3
-struct ArrayDecl : Stmt {
-    std::string name;
-    TypeSpec type;
-    std::vector<ExprPtr> elements;
+/* ============================
+   PROGRAM ROOT
+   ============================ */
 
-    ArrayDecl(std::string n, TypeSpec t, std::vector<ExprPtr> elems)
-        : name(std::move(n)), type(t), elements(std::move(elems)) {}
+class Program : public ASTNode {
+public:
+  std::vector<std::unique_ptr<Stmt>> statements;
 };
 
-struct PrintStmt : Stmt {
-    ExprPtr expr;
-    explicit PrintStmt(ExprPtr e) : expr(std::move(e)) {}
-};
+} // namespace nexa
 
-/* ================= PROGRAM ================= */
-
-struct Program : AstNode {
-    std::vector<StmtPtr> statements;
-};
-struct ArrayLiteral : Expr {
-    std::vector<ExprPtr> elements;
-    explicit ArrayLiteral(std::vector<ExprPtr> elems)
-        : elements(std::move(elems)) {}
-};
-
+#endif

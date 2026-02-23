@@ -1,156 +1,210 @@
 #include "Parser.h"
-#include <stdexcept>
-#include <vector>
+#include <iostream>
 
-Parser::Parser(Lexer& l) : lexer(l) { advance(); }
+using namespace nexa;
 
-void Parser::advance() { current = lexer.nextToken(); }
-
-Token Parser::expect(TokenKind kind, const std::string& msg) {
-    if (current.kind != kind) {
-        throw std::runtime_error(msg + " (Found '" + current.lexeme + "')");
-    }
-    Token t = current;
-    advance();
-    return t;
-}
+Parser::Parser(const std::vector<Token> &tokens) : tokens(tokens), current(0) {}
 
 std::unique_ptr<Program> Parser::parseProgram() {
-    auto program = std::make_unique<Program>();
-    while (current.kind != TokenKind::EndOfFile) {
-        program->statements.push_back(parseStatement());
+  auto program = std::make_unique<Program>();
+
+  while (true) {
+
+    if (peek().kind == TokenKind::END)
+      break;
+
+    auto stmt = parseStatement();
+
+    if (!stmt) {
+      std::cerr << "Parser stuck at token: " << peek().lexeme << "\n";
+      break; // STOP immediately
     }
-    return program;
+
+    program->statements.push_back(std::move(stmt));
+  }
+
+  return program;
 }
 
-StmtPtr Parser::parseStatement() {
-    if (current.kind == TokenKind::Print) {
-        advance();
-        auto expr = parseExpression();
-        expect(TokenKind::Semicolon, "Expect ';' after print");
-        return std::make_unique<PrintStmt>(std::move(expr));
-    }
-    if (current.kind == TokenKind::KeywordInt) {
-        advance();
-        auto name = expect(TokenKind::Identifier, "Expect name");
-        expect(TokenKind::Assign, "Expect '='");
-        auto expr = parseExpression();
-        expect(TokenKind::Semicolon, "Expect ';'");
-        return std::make_unique<VarDecl>(name.lexeme, TypeSpec(TypeKind::Int), std::move(expr));
-    }
+std::unique_ptr<Stmt> Parser::parseStatement() {
 
-    if (current.kind == TokenKind::TYPE_I32_OPEN || 
-        current.kind == TokenKind::TYPE_CHAR_OPEN || 
-        current.kind == TokenKind::TYPE_STRING_OPEN) {
-        return parseArrayDecl();
-    }
+  if (peek().kind == TokenKind::Int || peek().kind == TokenKind::Double ||
+      peek().kind == TokenKind::String) {
+
+    return parseVarDecl();
+  }
+
+  if (peek().kind == TokenKind::Print) {
+    advance(); // consume print
+    return parsePrint();
+  }
+
+  std::cerr << "Unexpected statement near token: " << peek().lexeme << "\n";
+
+  return nullptr;
+}
+
+std::unique_ptr<Stmt> Parser::parseVarDecl() {
+
+  Token typeToken = advance(); // consume type
+
+  Type declaredType;
+
+  if (typeToken.kind == TokenKind::Int)
+    declaredType = Type::getInt();
+  else if (typeToken.kind == TokenKind::Double)
+    declaredType = Type::getDouble();
+  else if (typeToken.kind == TokenKind::String)
+    declaredType = Type::getString();
+  else {
+    std::cerr << "Invalid type in declaration\n";
+    return nullptr;
+  }
+
+  Token name = advance();
+
+  if (name.kind != TokenKind::Identifier) {
+    std::cerr << "Expected variable name\n";
+    return nullptr;
+  }
+
+  if (!match(TokenKind::Assign)) {
+    std::cerr << "Expected '=' after variable name\n";
+    return nullptr;
+  }
+
+  auto initializer = parseExpression();
+
+  if (!match(TokenKind::Semicolon)) {
+    std::cerr << "Expected ';' after declaration\n";
+    return nullptr;
+  }
+
+  return std::make_unique<VarDeclStmt>(declaredType, name.lexeme,
+                                       std::move(initializer));
+}
+
+std::unique_ptr<Stmt> Parser::parsePrint() {
+
+  if (!match(TokenKind::LeftParen)) {
+    std::cerr << "Expected '(' after print\n";
+    return nullptr;
+  }
+
+  auto expr = parseExpression();
+
+  if (!match(TokenKind::RightParen)) {
+    std::cerr << "Expected ')' after expression\n";
+    return nullptr;
+  }
+
+  if (!match(TokenKind::Semicolon)) {
+    std::cerr << "Expected ';' after print\n";
+    return nullptr;
+  }
+
+  return std::make_unique<PrintStmt>(std::move(expr));
+}
+
+std::unique_ptr<Expr> Parser::parseExpression(int precedence) {
+
+  auto left = parsePrimary();
+
+  while (!isAtEnd() && precedence < getPrecedence(peek().kind)) {
+
+    Token op = advance();
+    int opPrec = getPrecedence(op.kind);
+
+    auto right = parseExpression(opPrec);
+
+    left = std::make_unique<BinaryExpr>(std::move(left), op.lexeme,
+                                        std::move(right));
+  }
+
+  return left;
+}
+
+std::unique_ptr<Expr> Parser::parsePrimary() {
+
+  Token token = advance();
+
+  if (token.kind == TokenKind::IntegerLiteral) {
+    return std::make_unique<IntegerLiteral>(std::stoi(token.lexeme));
+  }
+
+  if (token.kind == TokenKind::FloatLiteral) {
+    return std::make_unique<DoubleLiteral>(std::stod(token.lexeme));
+  }
+
+  if (token.kind == TokenKind::StringLiteral) {
+    return std::make_unique<StringLiteral>(token.lexeme);
+  }
+
+  if (token.kind == TokenKind::Identifier) {
+    return std::make_unique<VariableExpr>(token.lexeme);
+  }
+
+  if (token.kind == TokenKind::Minus) {
+
+    auto operand = parseExpression(20);
+
+    return std::make_unique<UnaryExpr>("-", std::move(operand));
+  }
+
+  if (token.kind == TokenKind::LeftParen) {
 
     auto expr = parseExpression();
-    // Path handling for accidental slashes
-    while (current.kind == TokenKind::Slash) advance();
-    
-    expect(TokenKind::Semicolon, "Expect ';' after statement");
-    return std::make_unique<PrintStmt>(std::move(expr)); 
+
+    if (!match(TokenKind::RightParen)) {
+      std::cerr << "Expected ')'\n";
+      return nullptr;
+    }
+
+    return expr;
+  }
+
+  std::cerr << "Unexpected expression\n";
+  return nullptr;
 }
 
-StmtPtr Parser::parseArrayDecl() {
-    TokenKind openKind = current.kind;
-    TokenKind closeKind;
-    TypeKind tKind;
+int Parser::getPrecedence(TokenKind kind) {
 
-    if (openKind == TokenKind::TYPE_I32_OPEN) {
-        closeKind = TokenKind::TYPE_I32_CLOSE;
-        tKind = TypeKind::IntArray;
-    } else if (openKind == TokenKind::TYPE_CHAR_OPEN) {
-        closeKind = TokenKind::TYPE_CHAR_CLOSE;
-        tKind = TypeKind::CharArray;
-    } else {
-        closeKind = TokenKind::TYPE_STRING_CLOSE;
-        tKind = TypeKind::StringArray;
-    }
+  switch (kind) {
+  case TokenKind::Star:
+  case TokenKind::Slash:
+    return 20;
 
-    advance(); 
-    auto name = expect(TokenKind::Identifier, "Expect matrix name");
-    expect(closeKind, "Expect closing bracket");
+  case TokenKind::Plus:
+  case TokenKind::Minus:
+    return 10;
 
-    if (current.kind == TokenKind::Semicolon) {
-        advance();
-        return std::make_unique<ArrayDecl>(name.lexeme, TypeSpec(tKind), std::vector<ExprPtr>{});
-    }
-
-    expect(TokenKind::Assign, "Expect '=' after matrix name");
-    std::vector<ExprPtr> elems;
-    do {
-        elems.push_back(parseExpression());
-    } while (current.kind == TokenKind::Comma && (advance(), true));
-
-    expect(TokenKind::Semicolon, "Expect ';' at end of line");
-    return std::make_unique<ArrayDecl>(name.lexeme, TypeSpec(tKind), std::move(elems));
+  default:
+    return 0;
+  }
 }
 
-ExprPtr Parser::parseExpression() {
-    // 1. Handle Unary Minus (Negative Integers)
-    if (current.kind == TokenKind::Minus) {
-        advance();
-        if (current.kind == TokenKind::IntegerLiteral) {
-            int val = -std::stoi(current.lexeme);
-            advance();
-            return std::make_unique<IntegerLiteral>(val);
-        }
-        throw std::runtime_error("Expected number after '-'");
-    }
-
-    // 2. Handle Integer Literals
-    if (current.kind == TokenKind::IntegerLiteral) {
-        int val = std::stoi(current.lexeme);
-        advance();
-        return std::make_unique<IntegerLiteral>(val);
-    }
-
-    // 3. Handle String Literals
-    if (current.kind == TokenKind::StringLiteral) {
-        std::string val = current.lexeme;
-        advance();
-        return std::make_unique<StringLiteral>(val);
-    }
-
-    // 4. Handle Matrix References and Dot Products
-    if (current.kind == TokenKind::TYPE_I32_OPEN || 
-        current.kind == TokenKind::TYPE_CHAR_OPEN || 
-        current.kind == TokenKind::TYPE_STRING_OPEN) {
-        
-        TokenKind openKind = current.kind;
-        TokenKind closeKind = (openKind == TokenKind::TYPE_I32_OPEN) ? TokenKind::TYPE_I32_CLOSE :
-                              (openKind == TokenKind::TYPE_CHAR_OPEN) ? TokenKind::TYPE_CHAR_CLOSE : 
-                               TokenKind::TYPE_STRING_CLOSE;
-
-        advance(); 
-        auto name = expect(TokenKind::Identifier, "Expect name");
-        expect(closeKind, "Expect closing bracket");
-
-        if (current.kind == TokenKind::Dot) {
-            advance();
-            expect(openKind, "Mismatching matrix types in dot product");
-            auto rhs = expect(TokenKind::Identifier, "Expect RHS name");
-            expect(closeKind, "Expect closing bracket");
-            return std::make_unique<DotExpr>(std::make_unique<VarRef>(name.lexeme), std::make_unique<VarRef>(rhs.lexeme));
-        }
-        return std::make_unique<VarRef>(name.lexeme);
-    }
-
-    // 5. Handle standard Variable References
-    if (current.kind == TokenKind::Identifier) {
-        std::string name = current.lexeme;
-        advance();
-        return std::make_unique<VarRef>(name);
-    }
-    
-    // 6. Handle Bare Slashes (Paths)
-    if (current.kind == TokenKind::Slash) {
-        std::string s = current.lexeme;
-        advance();
-        return std::make_unique<StringLiteral>(s);
-    }
-
-    throw std::runtime_error("Unexpected token in expression: " + current.lexeme);
+bool Parser::match(TokenKind kind) {
+  if (check(kind)) {
+    advance();
+    return true;
+  }
+  return false;
 }
+
+bool Parser::check(TokenKind kind) {
+  if (isAtEnd())
+    return false;
+  return peek().kind == kind;
+}
+
+Token Parser::advance() {
+  if (!isAtEnd())
+    current++;
+  return previous();
+}
+
+bool Parser::isAtEnd() { return peek().kind == TokenKind::END; }
+
+Token Parser::peek() { return tokens[current]; }
+
+Token Parser::previous() { return tokens[current - 1]; }

@@ -1,0 +1,49 @@
+#!/usr/bin/env nexa
+
+
+
+int a = 10;
+int b = 5;
+  
+
+
+
+
+int precedence1 = 10 + 5 * 2;      
+int precedence2 = (10 + 5) * 2;    
+
+print(precedence1);
+print(precedence2);
+
+
+int neg = -a;
+print(neg);    
+
+
+
+
+double x = 3.5;
+double y = 2.0;
+
+double dsum = x + y;
+double dmul = x * y;
+
+print(dsum);   
+print(dmul);   
+
+
+
+double mixed = a + x;   
+print(mixed);
+
+
+
+
+string msg = "Nexa is working!";
+print(msg);
+
+
+
+
+int complex = (a + b) * 2 - (b / 5) + 3;
+print(complex);

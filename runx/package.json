@@ -1,0 +1,46 @@
+{
+  "name": "runx",
+  "displayName": "RunX",
+  "description": "Nexa language support and runner",
+  "version": "0.0.1",
+  "publisher": "runx",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "activationEvents": [
+    "onLanguage:nexa",
+    "onCommand:runx.runFile"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "nexa",
+        "aliases": ["Nexa", "nexa"],
+        "extensions": [".nx"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "runx.runFile",
+        "title": "Run Nexa File"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "runx.runFile",
+          "when": "editorLangId == nexa",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "scripts": {},
+  "devDependencies": {},
+  "dependencies": {}
+}
