@@ -3,44 +3,51 @@
 
 #include <string>
 
+namespace nexa {
+
 enum class TokenKind {
 
-  // Literals
-  IntegerLiteral,
-  FloatLiteral,
-  StringLiteral,
-  Identifier,
+    // Literals
+    IntegerLiteral,
+    FloatLiteral,
+    StringLiteral,
+    Identifier,
 
-  // Type Keywords
-  Int,
-  Double,
-  String,
+    // Keywords
+    Int,
+    Double,
+    String,
+    Print,
+    Loop,
 
-  // Other Keywords
-  Print,
+    // Operators
+    Plus,
+    Minus,
+    Star,
+    Slash,
+    Assign,
 
-  // Operators
-  Plus,
-  Minus,
-  Star,
-  Slash,
-  Assign,
+    // Punctuation
+    LeftParen,
+    RightParen,
+    LeftBrace,
+    RightBrace,
+    LeftBracket,
+    RightBracket,
+    Comma,
+    Semicolon,
 
-  // Punctuation
-  LeftParen,
-  RightParen,
-  Semicolon,
-
-  // System
-  END,
-  Invalid
+    END,
+    Invalid
 };
 
 struct Token {
-  TokenKind kind;
-  std::string lexeme;
-  int line;
-  int column;
+    TokenKind kind;
+    std::string lexeme;
+    int line;
+    int column;
 };
+
+}
 
 #endif

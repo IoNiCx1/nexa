@@ -3,24 +3,23 @@
 
 #include "../ast/Ast.h"
 #include "../sema/Type.h"
-#include <map>
+
+#include <unordered_map>
 #include <string>
 
 namespace nexa {
 
 class SemanticAnalyzer {
 public:
-  bool analyze(Program &program);
+    void analyze(Program& program);
 
 private:
-  std::map<std::string, Type> symbolTable;
+    std::unordered_map<std::string, TypeKind> symbolTable;
 
-  Type analyzeExpr(Expr *expr);
-  bool analyzeStmt(Stmt *stmt);
-
-  Type promoteNumeric(const Type &left, const Type &right);
+    void analyzeStmt(Stmt* stmt);
+    TypeKind analyzeExpr(Expr* expr);
 };
 
-} // namespace nexa
+}
 
 #endif

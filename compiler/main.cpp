@@ -12,19 +12,30 @@
 
 using namespace nexa;
 
-std::string readFile(const std::string &path) {
+// =============================
+// Read File (with shebang support)
+// =============================
+
+std::string readFile(const std::string& path) {
+
     std::ifstream file(path);
+
     if (!file.is_open()) {
-        std::cerr << "Could not open file: " << path << "\n";
+        std::cerr << "Could not open file: "
+                  << path << "\n";
         exit(1);
     }
 
     std::stringstream buffer;
     buffer << file.rdbuf();
+
     std::string content = buffer.str();
 
-    // Remove shebang safely
-    if (content.size() >= 2 && content[0] == '#' && content[1] == '!') {
+    // Remove shebang (#!...)
+    if (content.size() >= 2 &&
+        content[0] == '#' &&
+        content[1] == '!') {
+
         size_t newline = content.find('\n');
         if (newline != std::string::npos)
             content.erase(0, newline + 1);
@@ -33,8 +44,12 @@ std::string readFile(const std::string &path) {
     return content;
 }
 
-void compileToIR(const std::string &source,
-                 const std::string &outputFile) {
+// =============================
+// Compile to IR
+// =============================
+
+void compileToIR(const std::string& source,
+                 const std::string& outputFile) {
 
     Lexer lexer(source);
     auto tokens = lexer.tokenize();
@@ -52,7 +67,7 @@ void compileToIR(const std::string &source,
     llvm::raw_fd_ostream dest(outputFile, EC);
 
     if (EC) {
-        std::cerr << "Could not open IR file for writing.\n";
+        std::cerr << "Could not open IR file.\n";
         exit(1);
     }
 
@@ -60,7 +75,11 @@ void compileToIR(const std::string &source,
     dest.flush();
 }
 
-int main(int argc, char **argv) {
+// =============================
+// Main
+// =============================
+
+int main(int argc, char** argv) {
 
     if (argc < 2) {
         std::cout << "Usage: nexa <file.nx>\n";
@@ -68,6 +87,7 @@ int main(int argc, char **argv) {
     }
 
     std::string file = argv[1];
+
     std::string source = readFile(file);
 
     std::string irFile = "output.ll";

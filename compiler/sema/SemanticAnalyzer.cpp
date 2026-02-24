@@ -1,130 +1,191 @@
 #include "SemanticAnalyzer.h"
 #include <iostream>
+#include <cstdlib>
 
 using namespace nexa;
 
-bool SemanticAnalyzer::analyze(Program &program) {
+// =============================
+// Entry
+// =============================
 
-  for (auto &stmt : program.statements) {
-    if (!analyzeStmt(stmt.get()))
-      return false;
-  }
-
-  return true;
+void SemanticAnalyzer::analyze(Program& program) {
+    for (auto& stmt : program.statements)
+        analyzeStmt(stmt.get());
 }
 
-bool SemanticAnalyzer::analyzeStmt(Stmt *stmt) {
+// =============================
+// Statements
+// =============================
 
-  if (auto varDecl = dynamic_cast<VarDeclStmt *>(stmt)) {
+void SemanticAnalyzer::analyzeStmt(Stmt* stmt) {
 
-    if (symbolTable.count(varDecl->name)) {
-      std::cerr << "Variable already declared: " << varDecl->name << "\n";
-      return false;
+    // -------------------------
+    // Variable Declaration
+    // -------------------------
+    if (auto var = dynamic_cast<VarDeclStmt*>(stmt)) {
+
+        TypeKind declared =
+            var->declaredType->kind;
+
+        TypeKind init =
+            analyzeExpr(var->initializer.get());
+
+        if (declared != init) {
+            std::cerr << "Type mismatch in variable declaration\n";
+            exit(1);
+        }
+
+        symbolTable[var->name] = declared;
     }
 
-    Type initType = analyzeExpr(varDecl->initializer.get());
+    // -------------------------
+    // Assignment
+    // -------------------------
+    else if (auto assign =
+        dynamic_cast<AssignmentStmt*>(stmt)) {
 
-    if (initType.kind == TypeKind::Invalid)
-      return false;
+        auto varExpr =
+            dynamic_cast<VariableExpr*>(assign->target.get());
 
-    // Numeric promotion allowed
-    if (varDecl->declaredType.isNumeric() && initType.isNumeric()) {
+        if (!varExpr) {
+            std::cerr << "Invalid assignment target\n";
+            exit(1);
+        }
 
-      varDecl->initializer->inferredType =
-          promoteNumeric(initType, varDecl->declaredType);
-    } else if (varDecl->declaredType != initType) {
+        if (!symbolTable.count(varExpr->name)) {
+            std::cerr << "Undefined variable: "
+                      << varExpr->name << "\n";
+            exit(1);
+        }
 
-      std::cerr << "Type mismatch in declaration of " << varDecl->name << "\n";
-      return false;
+        TypeKind targetType =
+            symbolTable[varExpr->name];
+
+        TypeKind valueType =
+            analyzeExpr(assign->value.get());
+
+        if (targetType != valueType) {
+            std::cerr << "Assignment type mismatch\n";
+            exit(1);
+        }
     }
 
-    symbolTable[varDecl->name] = varDecl->declaredType;
+    // -------------------------
+    // Print
+    // -------------------------
+    else if (auto print =
+        dynamic_cast<PrintStmt*>(stmt)) {
 
-    return true;
-  }
+        analyzeExpr(print->expression.get());
+    }
 
-  if (auto printStmt = dynamic_cast<PrintStmt *>(stmt)) {
+    // -------------------------
+    // Loop
+    // -------------------------
+    else if (auto loop =
+        dynamic_cast<LoopStmt*>(stmt)) {
 
-    Type exprType = analyzeExpr(printStmt->expression.get());
+        TypeKind countType =
+            analyzeExpr(loop->count.get());
 
-    if (exprType.kind == TypeKind::Invalid)
-      return false;
+        if (countType != TypeKind::Int) {
+            std::cerr << "Loop count must be int\n";
+            exit(1);
+        }
 
-    return true;
-  }
+        symbolTable[loop->iterator] = TypeKind::Int;
 
-  return true;
+        for (auto& bodyStmt : loop->body)
+            analyzeStmt(bodyStmt.get());
+    }
 }
 
-Type SemanticAnalyzer::analyzeExpr(Expr *expr) {
+// =============================
+// Expressions
+// =============================
 
-  if (auto intLit = dynamic_cast<IntegerLiteral *>(expr)) {
+TypeKind SemanticAnalyzer::analyzeExpr(Expr* expr) {
 
-    expr->inferredType = Type::getInt();
-    return expr->inferredType;
-  }
+    // -------------------------
+    // Integer
+    // -------------------------
+    if (auto intLit =
+        dynamic_cast<IntegerLiteral*>(expr)) {
 
-  if (auto dblLit = dynamic_cast<DoubleLiteral *>(expr)) {
+        expr->inferredType =
+            new Type(TypeKind::Int);
 
-    expr->inferredType = Type::getDouble();
-    return expr->inferredType;
-  }
-
-  if (auto strLit = dynamic_cast<StringLiteral *>(expr)) {
-
-    expr->inferredType = Type::getString();
-    return expr->inferredType;
-  }
-
-  if (auto var = dynamic_cast<VariableExpr *>(expr)) {
-
-    if (!symbolTable.count(var->name)) {
-      std::cerr << "Undefined variable: " << var->name << "\n";
-      return Type::getInvalid();
+        return TypeKind::Int;
     }
 
-    expr->inferredType = symbolTable[var->name];
+    // -------------------------
+    // Double
+    // -------------------------
+    if (auto dblLit =
+        dynamic_cast<DoubleLiteral*>(expr)) {
 
-    return expr->inferredType;
-  }
+        expr->inferredType =
+            new Type(TypeKind::Double);
 
-  if (auto unary = dynamic_cast<UnaryExpr *>(expr)) {
-
-    Type operandType = analyzeExpr(unary->operand.get());
-
-    if (!operandType.isNumeric()) {
-      std::cerr << "Unary operator requires numeric type\n";
-      return Type::getInvalid();
+        return TypeKind::Double;
     }
 
-    expr->inferredType = operandType;
-    return expr->inferredType;
-  }
+    // -------------------------
+    // String
+    // -------------------------
+    if (auto strLit =
+        dynamic_cast<StringLiteral*>(expr)) {
 
-  if (auto binary = dynamic_cast<BinaryExpr *>(expr)) {
+        expr->inferredType =
+            new Type(TypeKind::String);
 
-    Type left = analyzeExpr(binary->left.get());
-
-    Type right = analyzeExpr(binary->right.get());
-
-    if (!left.isNumeric() || !right.isNumeric()) {
-      std::cerr << "Binary operator requires numeric types\n";
-      return Type::getInvalid();
+        return TypeKind::String;
     }
 
-    Type result = promoteNumeric(left, right);
+    // -------------------------
+    // Variable
+    // -------------------------
+    if (auto var =
+        dynamic_cast<VariableExpr*>(expr)) {
 
-    expr->inferredType = result;
-    return result;
-  }
+        if (!symbolTable.count(var->name)) {
+            std::cerr << "Undefined variable: "
+                      << var->name << "\n";
+            exit(1);
+        }
 
-  return Type::getInvalid();
-}
+        TypeKind t =
+            symbolTable[var->name];
 
-Type SemanticAnalyzer::promoteNumeric(const Type &left, const Type &right) {
+        expr->inferredType =
+            new Type(t);
 
-  if (left.isDouble() || right.isDouble())
-    return Type::getDouble();
+        return t;
+    }
 
-  return Type::getInt();
+    // -------------------------
+    // Binary
+    // -------------------------
+    if (auto bin =
+        dynamic_cast<BinaryExpr*>(expr)) {
+
+        TypeKind left =
+            analyzeExpr(bin->left.get());
+
+        TypeKind right =
+            analyzeExpr(bin->right.get());
+
+        if (left != right) {
+            std::cerr << "Binary type mismatch\n";
+            exit(1);
+        }
+
+        expr->inferredType =
+            new Type(left);
+
+        return left;
+    }
+
+    std::cerr << "Unknown expression\n";
+    exit(1);
 }

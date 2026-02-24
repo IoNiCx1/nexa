@@ -123,9 +123,8 @@ CMakeFiles/nexa.dir/compiler/main.cpp.o: \
  /usr/include/c++/15/bits/stl_bvector.h \
  /usr/include/c++/15/bits/vector.tcc \
  /home/kali/nexa/compiler/parser/Parser.h \
- /home/kali/nexa/compiler/parser/../ast/Ast.h \
- /home/kali/nexa/compiler/parser/../ast/../sema/Type.h \
- /usr/include/c++/15/memory /usr/include/c++/15/bits/stl_tempbuf.h \
+ /home/kali/nexa/compiler/parser/../ast/Ast.h /usr/include/c++/15/memory \
+ /usr/include/c++/15/bits/stl_tempbuf.h \
  /usr/include/c++/15/bits/stl_raw_storage_iter.h \
  /usr/include/c++/15/bits/align.h /usr/include/c++/15/bits/unique_ptr.h \
  /usr/include/c++/15/bits/shared_ptr.h \
@@ -167,13 +166,16 @@ CMakeFiles/nexa.dir/compiler/main.cpp.o: \
  /usr/include/c++/15/pstl/glue_memory_defs.h \
  /usr/include/c++/15/pstl/execution_defs.h \
  /home/kali/nexa/compiler/parser/../lexer/Token.h \
+ /home/kali/nexa/compiler/parser/../sema/Type.h \
  /home/kali/nexa/compiler/sema/SemanticAnalyzer.h \
  /home/kali/nexa/compiler/sema/../ast/Ast.h \
- /home/kali/nexa/compiler/sema/../sema/Type.h /usr/include/c++/15/map \
- /usr/include/c++/15/bits/stl_tree.h \
+ /home/kali/nexa/compiler/sema/../sema/Type.h \
+ /usr/include/c++/15/unordered_map \
+ /usr/include/c++/15/bits/unordered_map.h \
+ /usr/include/c++/15/bits/hashtable.h \
+ /usr/include/c++/15/bits/hashtable_policy.h \
+ /usr/include/c++/15/bits/enable_special_members.h \
  /usr/include/c++/15/bits/node_handle.h \
- /usr/include/c++/15/bits/stl_map.h \
- /usr/include/c++/15/bits/stl_multimap.h \
  /usr/include/c++/15/bits/erase_if.h \
  /home/kali/nexa/compiler/ir/CodeGen.h \
  /home/kali/nexa/compiler/ir/../ast/Ast.h \
@@ -193,10 +195,8 @@ CMakeFiles/nexa.dir/compiler/main.cpp.o: \
  /usr/lib/llvm-18/include/llvm/Config/llvm-config.h \
  /usr/lib/llvm-18/include/llvm/Support/SwapByteOrder.h \
  /usr/lib/llvm-18/include/llvm/ADT/STLForwardCompat.h \
- /usr/include/c++/15/optional \
- /usr/include/c++/15/bits/enable_special_members.h \
- /usr/lib/llvm-18/include/llvm/ADT/bit.h /usr/include/c++/15/cstdint \
- /usr/include/c++/15/limits \
+ /usr/include/c++/15/optional /usr/lib/llvm-18/include/llvm/ADT/bit.h \
+ /usr/include/c++/15/cstdint /usr/include/c++/15/limits \
  /usr/lib/llvm-18/include/llvm/Support/type_traits.h \
  /usr/include/c++/15/utility /usr/include/c++/15/bits/stl_relops.h \
  /usr/include/c++/15/algorithm /usr/include/c++/15/bits/stl_algo.h \
@@ -208,12 +208,8 @@ CMakeFiles/nexa.dir/compiler/main.cpp.o: \
  /usr/include/c++/15/cstring /usr/include/string.h /usr/include/strings.h \
  /usr/lib/llvm-18/include/llvm/ADT/SmallVector.h \
  /usr/include/c++/15/functional /usr/include/c++/15/bits/std_function.h \
- /usr/include/c++/15/unordered_map \
- /usr/include/c++/15/bits/unordered_map.h \
- /usr/include/c++/15/bits/hashtable.h \
- /usr/include/c++/15/bits/hashtable_policy.h /usr/include/c++/15/array \
- /usr/include/c++/15/compare /usr/include/c++/15/iterator \
- /usr/include/c++/15/bits/stream_iterator.h \
+ /usr/include/c++/15/array /usr/include/c++/15/compare \
+ /usr/include/c++/15/iterator /usr/include/c++/15/bits/stream_iterator.h \
  /usr/include/c++/15/bits/streambuf_iterator.h \
  /usr/include/c++/15/streambuf /usr/include/c++/15/bits/ios_base.h \
  /usr/include/c++/15/bits/locale_classes.h \

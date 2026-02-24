@@ -1,33 +1,38 @@
-#ifndef LEXER_H
-#define LEXER_H
+#ifndef NEXA_LEXER_H
+#define NEXA_LEXER_H
 
 #include "Token.h"
 #include <string>
 #include <vector>
 
+namespace nexa {
+
 class Lexer {
 public:
-  Lexer(const std::string &source);
+    Lexer(const std::string& source);
 
-  std::vector<Token> tokenize();
+    std::vector<Token> tokenize();
 
 private:
-  std::string source;
-  size_t current;
-  int line;
-  int column;
+    std::string source;
+    size_t position;
+    int line;
+    int column;
 
-  char advance();
-  char peek();
-  bool isAtEnd();
+    char peek() const;
+    char peekNext() const;
+    char advance();
 
-  void skipWhitespace();
-  Token number();
-  Token identifier();
-  Token stringLiteral();
+    void skipWhitespace();
 
-  bool isAlpha(char c);
-  bool isDigit(char c);
+    Token makeToken(TokenKind kind,
+                    const std::string& lexeme);
+
+    Token number();
+    Token identifier();
+    Token stringLiteral();
 };
+
+}
 
 #endif

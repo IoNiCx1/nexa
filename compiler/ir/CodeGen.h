@@ -9,9 +9,8 @@
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Verifier.h>
 
-#include <map>
+#include <unordered_map>
 #include <memory>
-#include <string>
 
 namespace nexa {
 
@@ -19,8 +18,7 @@ class CodeGen {
 public:
     CodeGen();
 
-    void generate(Program &program);
-
+    void generate(Program& program);
     llvm::Module* getModule();
 
 private:
@@ -28,23 +26,18 @@ private:
     std::unique_ptr<llvm::Module> module;
     llvm::IRBuilder<> builder;
 
-    llvm::Function *printfFunc;
+    std::unordered_map<std::string, llvm::Value*> namedValues;
 
-    std::map<std::string, llvm::Value*> namedValues;
+    llvm::Function* printfFunc;
+    llvm::Function* mallocFunc;
+    llvm::Function* sprintfFunc;
 
-    llvm::Type* getLLVMType(const Type &type);
+    llvm::Type* getLLVMType(Type* type);
 
-    llvm::Value* generateExpr(Expr *expr);
-
-    void generateStmt(Stmt *stmt);
-
-    llvm::Value* promoteIfNeeded(
-        llvm::Value *value,
-        const Type &from,
-        const Type &to
-    );
+    llvm::Value* generateExpr(Expr* expr);
+    void generateStmt(Stmt* stmt);
 };
 
-} // namespace nexa
+}
 
 #endif
