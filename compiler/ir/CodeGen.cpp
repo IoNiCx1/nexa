@@ -62,6 +62,9 @@ llvm::Type* CodeGen::getLLVMType(Type* type)
     if (type->isString())
         return llvm::PointerType::get(context, 0);
 
+    if (type->isBool())
+        return llvm::Type::getInt1Ty(context);
+
     if (type->kind == TypeKind::Array)
         return llvm::PointerType::get(
             llvm::Type::getInt32Ty(context),
@@ -168,22 +171,37 @@ void CodeGen::generateStmt(Stmt* stmt)
         if (type->isInt())
         {
             auto fmt =
-                builder.CreateGlobalStringPtr("%d\n");
+                builder.CreateGlobalString("%d\n");
             builder.CreateCall(printfFunc, {fmt, val});
         }
         else if (type->isDouble())
         {
             auto fmt =
-                builder.CreateGlobalStringPtr("%f\n");
+                builder.CreateGlobalString("%f\n");
             builder.CreateCall(printfFunc, {fmt, val});
         }
         else if (type->isString())
         {
             auto fmt =
-                builder.CreateGlobalStringPtr("%s\n");
+                builder.CreateGlobalString("%s\n");
             builder.CreateCall(printfFunc, {fmt, val});
         }
-    }
+        else if (type->isBool())
+        {
+            auto fmt =
+                builder.CreateGlobalString("%d\n");
+
+            auto extended =
+                builder.CreateZExt(
+                    val,
+                    llvm::Type::getInt32Ty(context)
+                );
+
+            builder.CreateCall(
+                printfFunc,
+                {fmt, extended}
+            );
+        }
 
     else if (auto loop =
         dynamic_cast<LoopStmt*>(stmt))
@@ -252,6 +270,24 @@ void CodeGen::generateStmt(Stmt* stmt)
 
         builder.SetInsertPoint(endBlock);
     }
+
+    else if (type->isBool())
+    {
+        auto fmt = 
+            builder.CreateGlobalString("%d\n");
+
+        auto extended = 
+            builder.CreateZExt(
+                val,
+                llvm::Type::getInt32Ty(context)
+            );
+
+        builder.CreateCall(
+            printfFunc,
+            {fmt, extended}
+        );
+    }
+}
 }
 
 // =============================
@@ -338,8 +374,17 @@ llvm::Value* CodeGen::generateExpr(Expr* expr)
     if (auto strLit =
         dynamic_cast<StringLiteral*>(expr))
     {
-        return builder.CreateGlobalStringPtr(
+        return builder.CreateGlobalString(
             strLit->value
+        );
+    }
+
+    if (auto boolLit =
+        dynamic_cast<BooleanLiteral*>(expr))
+    {
+        return llvm::ConstantInt::get(
+            llvm::Type::getInt1Ty(context),
+            boolLit->value
         );
     }
 
@@ -360,26 +405,58 @@ llvm::Value* CodeGen::generateExpr(Expr* expr)
     if (auto bin =
         dynamic_cast<BinaryExpr*>(expr))
     {
-        auto left =
+        auto leftVal =
             generateExpr(bin->left.get());
 
-        auto right =
+        auto rightVal =
             generateExpr(bin->right.get());
+
+        auto leftType =
+            bin->left->inferredType;
+
+        auto rightType =
+            bin->right->inferredType;
+
+        // Promote int → double if result is double
+        if (expr->inferredType->isDouble())
+        {
+            if (leftType->isInt())
+                leftVal =
+                    builder.CreateSIToFP(
+                        leftVal,
+                        llvm::Type::getDoubleTy(context)
+                    );
+
+            if (rightType->isInt())
+                rightVal =
+                    builder.CreateSIToFP(
+                        rightVal,
+                        llvm::Type::getDoubleTy(context)
+                    );
+        }
 
         if (expr->inferredType->isInt())
         {
-            if (bin->op == "+") return builder.CreateAdd(left, right);
-            if (bin->op == "-") return builder.CreateSub(left, right);
-            if (bin->op == "*") return builder.CreateMul(left, right);
-            if (bin->op == "/") return builder.CreateSDiv(left, right);
+            if (bin->op == "+")
+                return builder.CreateAdd(leftVal, rightVal);
+            if (bin->op == "-")
+                return builder.CreateSub(leftVal, rightVal);
+            if (bin->op == "*")
+                return builder.CreateMul(leftVal, rightVal);
+            if (bin->op == "/")
+                return builder.CreateSDiv(leftVal, rightVal);
         }
 
         if (expr->inferredType->isDouble())
         {
-            if (bin->op == "+") return builder.CreateFAdd(left, right);
-            if (bin->op == "-") return builder.CreateFSub(left, right);
-            if (bin->op == "*") return builder.CreateFMul(left, right);
-            if (bin->op == "/") return builder.CreateFDiv(left, right);
+            if (bin->op == "+")
+                return builder.CreateFAdd(leftVal, rightVal);
+            if (bin->op == "-")
+                return builder.CreateFSub(leftVal, rightVal);
+            if (bin->op == "*")
+                return builder.CreateFMul(leftVal, rightVal);
+            if (bin->op == "/")
+                return builder.CreateFDiv(leftVal, rightVal);
         }
     }
 

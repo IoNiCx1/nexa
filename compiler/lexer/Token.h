@@ -11,12 +11,16 @@ enum class TokenKind {
     IntegerLiteral,
     FloatLiteral,
     StringLiteral,
+    BooleanLiteral,
     Identifier,
 
     // Keywords
     Int,
     Double,
     String,
+    Bool,
+    True,
+    False,
     Print,
     Loop,
 

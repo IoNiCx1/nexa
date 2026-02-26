@@ -143,59 +143,71 @@ TypeKind SemanticAnalyzer::analyzeExpr(Expr* expr) {
     }
 
     // -------------------------
-// Array Literal
-// -------------------------
-if (auto arr =
-    dynamic_cast<ArrayLiteralExpr*>(expr)) {
+    // Boolean
+    // -------------------------
+    if (auto boolLit = 
+    dynamic_cast<BooleanLiteral*>(expr))
+    {
+        expr->inferredType = 
+            new Type(TypeKind::Bool);
 
-    if (arr->elements.empty()) {
-        std::cerr << "Empty array not allowed\n";
-        exit(1);
+        return TypeKind::Bool;
     }
 
-    TypeKind first =
-        analyzeExpr(arr->elements[0].get());
+    // -------------------------
+    // Array Literal
+    // -------------------------
+    if (auto arr =
+        dynamic_cast<ArrayLiteralExpr*>(expr)) {
 
-    for (auto& el : arr->elements) {
-        TypeKind t =
-            analyzeExpr(el.get());
-
-        if (t != first) {
-            std::cerr << "Array elements must have same type\n";
+        if (arr->elements.empty()) {
+            std::cerr << "Empty array not allowed\n";
             exit(1);
         }
+
+        TypeKind first =
+            analyzeExpr(arr->elements[0].get());
+
+        for (auto& el : arr->elements) {
+            TypeKind t =
+                analyzeExpr(el.get());
+
+            if (t != first) {
+                std::cerr << "Array elements must have same type\n";
+                exit(1);
+            }
+        }
+
+        expr->inferredType = new Type(TypeKind::Array);
+    return TypeKind::Array;
     }
 
-    expr->inferredType = new Type(TypeKind::Array);
-return TypeKind::Array;
-}
+    // -------------------------
+    // Indexing
+    // -------------------------
+    if (auto index =
+        dynamic_cast<IndexExpr*>(expr)) {
 
-// -------------------------
-// Indexing
-// -------------------------
-if (auto index =
-    dynamic_cast<IndexExpr*>(expr)) {
+        TypeKind arrayType =
+            analyzeExpr(index->array.get());
 
-    TypeKind arrayType =
-        analyzeExpr(index->array.get());
+        if (arrayType != TypeKind::Array) {
+            std::cerr << "Cannot index non-array type\n";
+            exit(1);
+        }
 
-    if (arrayType != TypeKind::Array) {
-        std::cerr << "Cannot index non-array type\n";
-        exit(1);
+        TypeKind idxType =
+            analyzeExpr(index->index.get());
+
+        if (idxType != TypeKind::Int) {
+            std::cerr << "Array index must be int\n";
+            exit(1);
+        }
+
+        // Assume int element type for now
+        expr->inferredType = new Type(TypeKind::Int);
+    return TypeKind::Int;
     }
-
-    TypeKind idxType =
-        analyzeExpr(index->index.get());
-
-    if (idxType != TypeKind::Int) {
-        std::cerr << "Array index must be int\n";
-        exit(1);
-    }
-
-    // Assume int element type for now
-    expr->inferredType = new Type(TypeKind::Int);
-return TypeKind::Int;
-}
 
     // -------------------------
     // Variable
@@ -230,15 +242,35 @@ return TypeKind::Int;
         TypeKind right =
             analyzeExpr(bin->right.get());
 
-        if (left != right) {
-            std::cerr << "Binary type mismatch\n";
+        // Block string arithmetic
+        if (left == TypeKind::String ||
+            right == TypeKind::String)
+        {
+            std::cerr << "String operations not supported\n";
             exit(1);
         }
 
-        expr->inferredType =
-            new Type(left);
+        // Same type → OK
+        if (left == right)
+        {
+            expr->inferredType =
+                new Type(left);
+            return left;
+        }
 
-        return left;
+        // int + double OR double + int
+        if ((left == TypeKind::Int &&
+            right == TypeKind::Double) ||
+            (left == TypeKind::Double &&
+            right == TypeKind::Int))
+        {
+            expr->inferredType =
+                new Type(TypeKind::Double);
+            return TypeKind::Double;
+        }
+
+        std::cerr << "Binary type mismatch\n";
+        exit(1);
     }
 
     std::cerr << "Unknown expression\n";

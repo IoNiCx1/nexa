@@ -13,6 +13,7 @@ enum class TypeKind {
     Int,
     Double,
     String,
+    Bool,
     Array,
     Void
 };
@@ -34,6 +35,7 @@ struct Type {
     bool isInt() const { return kind == TypeKind::Int; }
     bool isDouble() const { return kind == TypeKind::Double; }
     bool isString() const { return kind == TypeKind::String; }
+    bool isBool() const { return kind == TypeKind::Bool; }
     bool isArray() const { return kind == TypeKind::Array; }
     bool isVoid() const { return kind == TypeKind::Void; }
 
@@ -58,6 +60,7 @@ struct Type {
 static Type TYPE_INT(TypeKind::Int);
 static Type TYPE_DOUBLE(TypeKind::Double);
 static Type TYPE_STRING(TypeKind::String);
+static Type TYPE_BOOL(TypeKind::Bool);
 static Type TYPE_VOID(TypeKind::Void);
 
 } // namespace nexa

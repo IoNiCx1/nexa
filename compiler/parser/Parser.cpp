@@ -56,7 +56,8 @@ std::unique_ptr<Stmt> Parser::parseStatement() {
 
     if (check(TokenKind::Int) ||
         check(TokenKind::Double) ||
-        check(TokenKind::String)) {
+        check(TokenKind::String) ||
+        check(TokenKind::Bool)){ //added this
 
         return parseVarDecl();
     }
@@ -112,6 +113,7 @@ Type* Parser::parseType() {
     if (t.lexeme == "int") base = &TYPE_INT;
     else if (t.lexeme == "double") base = &TYPE_DOUBLE;
     else if (t.lexeme == "string") base = &TYPE_STRING;
+    else if (t.lexeme == "bool") base = &TYPE_BOOL;
     else {
         std::cerr << "Unknown type\n";
         exit(1);
@@ -286,6 +288,19 @@ std::unique_ptr<Expr> Parser::parsePrimary() {
         return std::make_unique<StringLiteral>(
             t.lexeme
         );
+
+    if (t.kind == TokenKind::BooleanLiteral)
+    {
+        return std::make_unique<BooleanLiteral>(
+            t.lexeme == "true"
+        );
+    }
+
+    // if (t.kind == TokenKind::True)
+    //     return std::make_unique<BooleanLiteral>(true);
+    
+    // if (t.kind == TokenKind::False)
+    //     return std::make_unique<BooleanLiteral>(false);
 
     if (t.kind == TokenKind::Identifier) {
         auto expr =

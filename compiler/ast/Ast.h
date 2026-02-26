@@ -50,6 +50,16 @@ struct StringLiteral : Expr {
 };
 
 // =============================
+// Boolean
+// =============================
+
+struct BooleanLiteral : Expr {
+    bool value;
+
+    BooleanLiteral(bool v) : value(v) {}
+};
+
+// =============================
 // Variable
 // =============================
 

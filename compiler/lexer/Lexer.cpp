@@ -34,15 +34,30 @@ void Lexer::skipWhitespace() {
     while (true) {
         char c = peek();
 
-        // Skip whitespace
+        // whitespace
         if (isspace(c)) {
             advance();
         }
 
-        // Skip line comments
+        // line comment
         else if (c == '/' && peekNext() == '/') {
             while (peek() != '\n' && peek() != '\0')
                 advance();
+        }
+
+        // block comment (optional, but safe)
+        else if (c == '/' && peekNext() == '*') {
+            advance(); // '/'
+            advance(); // '*'
+
+            while (!(peek() == '*' && peekNext() == '/') &&
+                   peek() != '\0')
+                advance();
+
+            if (peek() == '*') {
+                advance();
+                advance();
+            }
         }
 
         else {
@@ -65,9 +80,15 @@ Token Lexer::identifier() {
     if (lexeme == "int") return makeToken(TokenKind::Int, lexeme);
     if (lexeme == "double") return makeToken(TokenKind::Double, lexeme);
     if (lexeme == "string") return makeToken(TokenKind::String, lexeme);
+    if (lexeme == "bool") return makeToken(TokenKind:: Bool, lexeme); // Boolean
     if (lexeme == "print") return makeToken(TokenKind::Print, lexeme);
     if (lexeme == "loop") return makeToken(TokenKind::Loop, lexeme);
-
+    
+    if (lexeme == "true") 
+        return makeToken(TokenKind::BooleanLiteral, lexeme); // Boolen True
+    if (lexeme == "false") 
+        return makeToken(TokenKind::BooleanLiteral, lexeme); // Boolean False
+    
     return makeToken(TokenKind::Identifier, lexeme);
 }
 
@@ -108,6 +129,9 @@ std::vector<Token> Lexer::tokenize() {
     while (peek() != '\0') {
 
         skipWhitespace();
+        if (peek() == '\0')
+            break;
+
         char c = peek();
 
         if (isalpha(c) || c == '_') {
