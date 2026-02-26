@@ -19,3 +19,6 @@ warning: overriding the module target triple with x86_64-pc-linux-gnu [-Woverrid
                                                                                              
 ┌──(kali㉿kali)-[~/nexa]
 └─$ echo $?
+
+
+sharanmasuta@gmail.com

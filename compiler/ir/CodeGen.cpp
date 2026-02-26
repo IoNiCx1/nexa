@@ -16,7 +16,6 @@ CodeGen::CodeGen()
     : module(std::make_unique<llvm::Module>("nexa_module", context)),
       builder(context)
 {
-    // printf declaration
     auto printfType = llvm::FunctionType::get(
         llvm::Type::getInt32Ty(context),
         llvm::PointerType::get(context, 0),
@@ -30,7 +29,6 @@ CodeGen::CodeGen()
         module.get()
     );
 
-    // malloc declaration
     auto mallocType = llvm::FunctionType::get(
         llvm::PointerType::get(context, 0),
         llvm::Type::getInt64Ty(context),
@@ -44,10 +42,6 @@ CodeGen::CodeGen()
         module.get()
     );
 }
-
-// =============================
-// Module Getter
-// =============================
 
 llvm::Module* CodeGen::getModule() {
     return module.get();
@@ -67,6 +61,12 @@ llvm::Type* CodeGen::getLLVMType(Type* type)
 
     if (type->isString())
         return llvm::PointerType::get(context, 0);
+
+    if (type->kind == TypeKind::Array)
+        return llvm::PointerType::get(
+            llvm::Type::getInt32Ty(context),
+            0
+        );
 
     return nullptr;
 }
@@ -119,23 +119,29 @@ void CodeGen::generate(Program& program)
 
 void CodeGen::generateStmt(Stmt* stmt)
 {
-    // Variable Declaration
     if (auto var = dynamic_cast<VarDeclStmt*>(stmt))
     {
-        auto llvmType = getLLVMType(var->declaredType);
-
-        auto alloca =
-            builder.CreateAlloca(llvmType);
-
         auto initVal =
             generateExpr(var->initializer.get());
 
-        builder.CreateStore(initVal, alloca);
+        if (var->declaredType->kind == TypeKind::Array)
+        {
+            namedValues[var->name] = initVal;
+        }
+        else
+        {
+            auto llvmType =
+                getLLVMType(var->declaredType);
 
-        namedValues[var->name] = alloca;
+            auto alloca =
+                builder.CreateAlloca(llvmType);
+
+            builder.CreateStore(initVal, alloca);
+
+            namedValues[var->name] = alloca;
+        }
     }
 
-    // Assignment
     else if (auto assign =
         dynamic_cast<AssignmentStmt*>(stmt))
     {
@@ -146,12 +152,10 @@ void CodeGen::generateStmt(Stmt* stmt)
             dynamic_cast<VariableExpr*>(assign->target.get()))
         {
             auto ptr = namedValues[var->name];
-
             builder.CreateStore(value, ptr);
         }
     }
 
-    // Print
     else if (auto print =
         dynamic_cast<PrintStmt*>(stmt))
     {
@@ -165,35 +169,22 @@ void CodeGen::generateStmt(Stmt* stmt)
         {
             auto fmt =
                 builder.CreateGlobalStringPtr("%d\n");
-
-            builder.CreateCall(
-                printfFunc,
-                {fmt, val}
-            );
+            builder.CreateCall(printfFunc, {fmt, val});
         }
         else if (type->isDouble())
         {
             auto fmt =
                 builder.CreateGlobalStringPtr("%f\n");
-
-            builder.CreateCall(
-                printfFunc,
-                {fmt, val}
-            );
+            builder.CreateCall(printfFunc, {fmt, val});
         }
         else if (type->isString())
         {
             auto fmt =
                 builder.CreateGlobalStringPtr("%s\n");
-
-            builder.CreateCall(
-                printfFunc,
-                {fmt, val}
-            );
+            builder.CreateCall(printfFunc, {fmt, val});
         }
     }
 
-    // Loop
     else if (auto loop =
         dynamic_cast<LoopStmt*>(stmt))
     {
@@ -219,29 +210,16 @@ void CodeGen::generateStmt(Stmt* stmt)
         namedValues[loop->iterator] = loopVar;
 
         auto condBlock =
-            llvm::BasicBlock::Create(
-                context,
-                "loop_cond",
-                function
-            );
+            llvm::BasicBlock::Create(context, "loop_cond", function);
 
         auto bodyBlock =
-            llvm::BasicBlock::Create(
-                context,
-                "loop_body",
-                function
-            );
+            llvm::BasicBlock::Create(context, "loop_body", function);
 
         auto endBlock =
-            llvm::BasicBlock::Create(
-                context,
-                "loop_end",
-                function
-            );
+            llvm::BasicBlock::Create(context, "loop_end", function);
 
         builder.CreateBr(condBlock);
 
-        // Condition
         builder.SetInsertPoint(condBlock);
 
         auto current =
@@ -251,18 +229,10 @@ void CodeGen::generateStmt(Stmt* stmt)
             );
 
         auto cond =
-            builder.CreateICmpSLT(
-                current,
-                countVal
-            );
+            builder.CreateICmpSLT(current, countVal);
 
-        builder.CreateCondBr(
-            cond,
-            bodyBlock,
-            endBlock
-        );
+        builder.CreateCondBr(cond, bodyBlock, endBlock);
 
-        // Body
         builder.SetInsertPoint(bodyBlock);
 
         for (auto& bodyStmt : loop->body)
@@ -277,14 +247,9 @@ void CodeGen::generateStmt(Stmt* stmt)
                 )
             );
 
-        builder.CreateStore(
-            increment,
-            loopVar
-        );
-
+        builder.CreateStore(increment, loopVar);
         builder.CreateBr(condBlock);
 
-        // End
         builder.SetInsertPoint(endBlock);
     }
 }
@@ -295,6 +260,63 @@ void CodeGen::generateStmt(Stmt* stmt)
 
 llvm::Value* CodeGen::generateExpr(Expr* expr)
 {
+    if (auto arr = dynamic_cast<ArrayLiteralExpr*>(expr))
+    {
+        int size = arr->elements.size();
+
+        llvm::Type* elemType =
+            llvm::Type::getInt32Ty(context);
+
+        llvm::Value* arrayAlloc =
+            builder.CreateAlloca(
+                elemType,
+                llvm::ConstantInt::get(
+                    llvm::Type::getInt32Ty(context),
+                    size
+                )
+            );
+
+        for (int i = 0; i < size; i++)
+        {
+            llvm::Value* index =
+                llvm::ConstantInt::get(
+                    llvm::Type::getInt32Ty(context),
+                    i
+                );
+
+            llvm::Value* elementPtr =
+                builder.CreateGEP(
+                    elemType,
+                    arrayAlloc,
+                    index
+                );
+
+            llvm::Value* value =
+                generateExpr(arr->elements[i].get());
+
+            builder.CreateStore(value, elementPtr);
+        }
+
+        return arrayAlloc;
+    }
+
+    if (auto index = dynamic_cast<IndexExpr*>(expr))
+    {
+        llvm::Value* arrayPtr =
+            generateExpr(index->array.get());
+
+        llvm::Value* idx =
+            generateExpr(index->index.get());
+
+        llvm::Type* elemType =
+            llvm::Type::getInt32Ty(context);
+
+        llvm::Value* elementPtr =
+            builder.CreateGEP(elemType, arrayPtr, idx);
+
+        return builder.CreateLoad(elemType, elementPtr);
+    }
+
     if (auto intLit =
         dynamic_cast<IntegerLiteral*>(expr))
     {
@@ -326,6 +348,9 @@ llvm::Value* CodeGen::generateExpr(Expr* expr)
     {
         auto ptr = namedValues[var->name];
 
+        if (expr->inferredType->kind == TypeKind::Array)
+            return ptr;
+
         return builder.CreateLoad(
             getLLVMType(expr->inferredType),
             ptr
@@ -343,26 +368,18 @@ llvm::Value* CodeGen::generateExpr(Expr* expr)
 
         if (expr->inferredType->isInt())
         {
-            if (bin->op == "+")
-                return builder.CreateAdd(left, right);
-            if (bin->op == "-")
-                return builder.CreateSub(left, right);
-            if (bin->op == "*")
-                return builder.CreateMul(left, right);
-            if (bin->op == "/")
-                return builder.CreateSDiv(left, right);
+            if (bin->op == "+") return builder.CreateAdd(left, right);
+            if (bin->op == "-") return builder.CreateSub(left, right);
+            if (bin->op == "*") return builder.CreateMul(left, right);
+            if (bin->op == "/") return builder.CreateSDiv(left, right);
         }
 
         if (expr->inferredType->isDouble())
         {
-            if (bin->op == "+")
-                return builder.CreateFAdd(left, right);
-            if (bin->op == "-")
-                return builder.CreateFSub(left, right);
-            if (bin->op == "*")
-                return builder.CreateFMul(left, right);
-            if (bin->op == "/")
-                return builder.CreateFDiv(left, right);
+            if (bin->op == "+") return builder.CreateFAdd(left, right);
+            if (bin->op == "-") return builder.CreateFSub(left, right);
+            if (bin->op == "*") return builder.CreateFMul(left, right);
+            if (bin->op == "/") return builder.CreateFDiv(left, right);
         }
     }
 

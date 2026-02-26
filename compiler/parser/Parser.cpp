@@ -47,19 +47,13 @@ std::unique_ptr<Program> Parser::parseProgram() {
 // =============================
 
 std::unique_ptr<Stmt> Parser::parseStatement() {
-    // std::cout << "DEBUG TOKEN KIND: "
-    //       << static_cast<int>(peek().kind)
-    //       << " -> "
-    //       << peek().lexeme << "\n";
-    // Prints
+
     if (match(TokenKind::Print))
         return parsePrint();
 
-    // Loop
     if (match(TokenKind::Loop))
         return parseLoop();
 
-    // Variable declarations
     if (check(TokenKind::Int) ||
         check(TokenKind::Double) ||
         check(TokenKind::String)) {
@@ -67,7 +61,6 @@ std::unique_ptr<Stmt> Parser::parseStatement() {
         return parseVarDecl();
     }
 
-    // Assignment
     if (check(TokenKind::Identifier))
         return parseAssignment();
 
@@ -84,13 +77,24 @@ std::unique_ptr<Stmt> Parser::parseVarDecl() {
 
     Type* declaredType = parseType();
 
-    Token name = advance(); // identifier
+    if (!check(TokenKind::Identifier)) {
+        std::cerr << "Expected variable name\n";
+        exit(1);
+    }
 
-    match(TokenKind::Assign);
+    Token name = advance();
+
+    if (!match(TokenKind::Assign)) {
+        std::cerr << "Expected '=' after variable name\n";
+        exit(1);
+    }
 
     auto initializer = parseExpression();
 
-    match(TokenKind::Semicolon);
+    if (!match(TokenKind::Semicolon)) {
+        std::cerr << "Expected ';' after declaration\n";
+        exit(1);
+    }
 
     return std::make_unique<VarDeclStmt>(
         declaredType,
@@ -113,9 +117,14 @@ Type* Parser::parseType() {
         exit(1);
     }
 
-    // Check for array type
+    // Strict array type handling
     if (match(TokenKind::LeftBracket)) {
-        match(TokenKind::RightBracket);
+
+        if (!match(TokenKind::RightBracket)) {
+            std::cerr << "Expected ']' after '[' in array type\n";
+            exit(1);
+        }
+
         return new Type(TypeKind::Array, base);
     }
 
@@ -137,7 +146,10 @@ std::unique_ptr<Stmt> Parser::parseAssignment() {
 
     auto value = parseExpression();
 
-    match(TokenKind::Semicolon);
+    if (!match(TokenKind::Semicolon)) {
+        std::cerr << "Expected ';' after assignment\n";
+        exit(1);
+    }
 
     return std::make_unique<AssignmentStmt>(
         std::move(target),
@@ -151,12 +163,22 @@ std::unique_ptr<Stmt> Parser::parseAssignment() {
 
 std::unique_ptr<Stmt> Parser::parsePrint() {
 
-    match(TokenKind::LeftParen);
+    if (!match(TokenKind::LeftParen)) {
+        std::cerr << "Expected '(' after print\n";
+        exit(1);
+    }
 
     auto expr = parseExpression();
 
-    match(TokenKind::RightParen);
-    match(TokenKind::Semicolon);
+    if (!match(TokenKind::RightParen)) {
+        std::cerr << "Expected ')' after print expression\n";
+        exit(1);
+    }
+
+    if (!match(TokenKind::Semicolon)) {
+        std::cerr << "Expected ';' after print statement\n";
+        exit(1);
+    }
 
     return std::make_unique<PrintStmt>(std::move(expr));
 }
@@ -167,16 +189,34 @@ std::unique_ptr<Stmt> Parser::parsePrint() {
 
 std::unique_ptr<Stmt> Parser::parseLoop() {
 
-    match(TokenKind::LeftParen);
+    if (!match(TokenKind::LeftParen)) {
+        std::cerr << "Expected '(' after loop\n";
+        exit(1);
+    }
+
+    if (!check(TokenKind::Identifier)) {
+        std::cerr << "Expected iterator name in loop\n";
+        exit(1);
+    }
 
     Token iterator = advance();
 
-    match(TokenKind::Comma);
+    if (!match(TokenKind::Comma)) {
+        std::cerr << "Expected ',' in loop\n";
+        exit(1);
+    }
 
     auto count = parseExpression();
 
-    match(TokenKind::RightParen);
-    match(TokenKind::LeftBrace);
+    if (!match(TokenKind::RightParen)) {
+        std::cerr << "Expected ')' after loop parameters\n";
+        exit(1);
+    }
+
+    if (!match(TokenKind::LeftBrace)) {
+        std::cerr << "Expected '{' after loop\n";
+        exit(1);
+    }
 
     auto loop = std::make_unique<LoopStmt>(
         iterator.lexeme,
@@ -248,7 +288,6 @@ std::unique_ptr<Expr> Parser::parsePrimary() {
         );
 
     if (t.kind == TokenKind::Identifier) {
-
         auto expr =
             std::make_unique<VariableExpr>(t.lexeme);
 
@@ -257,10 +296,16 @@ std::unique_ptr<Expr> Parser::parsePrimary() {
 
     if (t.kind == TokenKind::LeftParen) {
         auto expr = parseExpression();
-        match(TokenKind::RightParen);
+
+        if (!match(TokenKind::RightParen)) {
+            std::cerr << "Expected ')'\n";
+            exit(1);
+        }
+
         return expr;
     }
 
+    // Array Literal
     if (t.kind == TokenKind::LeftBracket) {
 
         auto array = std::make_unique<ArrayLiteralExpr>();
@@ -273,7 +318,11 @@ std::unique_ptr<Expr> Parser::parsePrimary() {
             } while (match(TokenKind::Comma));
         }
 
-        match(TokenKind::RightBracket);
+        if (!match(TokenKind::RightBracket)) {
+            std::cerr << "Expected ']' to close array literal\n";
+            exit(1);
+        }
+
         return array;
     }
 
@@ -286,7 +335,6 @@ std::unique_ptr<Expr> Parser::parsePostfix(
 
     while (true) {
 
-        // Function call
         if (match(TokenKind::LeftParen)) {
 
             auto call =
@@ -303,15 +351,22 @@ std::unique_ptr<Expr> Parser::parsePostfix(
                 } while (match(TokenKind::Comma));
             }
 
-            match(TokenKind::RightParen);
+            if (!match(TokenKind::RightParen)) {
+                std::cerr << "Expected ')' after function call\n";
+                exit(1);
+            }
+
             expr = std::move(call);
         }
 
-        // Indexing
         else if (match(TokenKind::LeftBracket)) {
 
             auto index = parseExpression();
-            match(TokenKind::RightBracket);
+
+            if (!match(TokenKind::RightBracket)) {
+                std::cerr << "Expected ']' after index expression\n";
+                exit(1);
+            }
 
             expr = std::make_unique<IndexExpr>(
                 std::move(expr),

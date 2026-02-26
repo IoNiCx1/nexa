@@ -1,10 +1,2 @@
-var x = 10;
-var y = 20;
-
-var sum = x + y;
-print sum;
-
-var t = <2,2>(1,2,3,4);
-print t;
-
-print "Hello World";
+int x[] = {1,2,3,4,5};
+print x;
