@@ -333,4 +333,14 @@ CMakeFiles/nexa.dir/compiler/ir/CodeGen.cpp.o: \
  /usr/lib/llvm-18/include/llvm/Support/Format.h \
  /usr/lib/llvm-18/include/llvm/Support/TypeName.h \
  /usr/include/c++/15/list /usr/include/c++/15/bits/stl_list.h \
- /usr/include/c++/15/bits/list.tcc
+ /usr/include/c++/15/bits/list.tcc /usr/include/c++/15/iostream \
+ /usr/include/c++/15/ostream /usr/include/c++/15/bits/ostream.h \
+ /usr/include/c++/15/ios /usr/include/c++/15/bits/basic_ios.h \
+ /usr/include/c++/15/bits/locale_facets.h /usr/include/c++/15/cwctype \
+ /usr/include/wctype.h /usr/include/x86_64-linux-gnu/bits/wctype-wchar.h \
+ /usr/include/x86_64-linux-gnu/c++/15/bits/ctype_base.h \
+ /usr/include/x86_64-linux-gnu/c++/15/bits/ctype_inline.h \
+ /usr/include/c++/15/bits/locale_facets.tcc \
+ /usr/include/c++/15/bits/basic_ios.tcc \
+ /usr/include/c++/15/bits/ostream.tcc /usr/include/c++/15/istream \
+ /usr/include/c++/15/bits/istream.tcc

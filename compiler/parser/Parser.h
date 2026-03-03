@@ -34,6 +34,7 @@ private:
     // Statements
     // =============================
     std::unique_ptr<Stmt> parseStatement();
+    std::unique_ptr<Stmt> parseIf();
     std::unique_ptr<Stmt> parseVarDecl();
     std::unique_ptr<Stmt> parseAssignment();
     std::unique_ptr<Stmt> parsePrint();

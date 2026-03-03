@@ -69,7 +69,11 @@ struct ArrayLiteralExpr : Expr {
 // =============================
 // Index Expression
 // =============================
+struct BoolLiteral : Expr {
+    bool value;
 
+    BoolLiteral(bool val) : value(val) {}
+};
 struct IndexExpr : Expr {
     std::unique_ptr<Expr> array;
     std::unique_ptr<Expr> index;
@@ -162,6 +166,14 @@ struct LoopStmt : Stmt {
              std::unique_ptr<Expr> c)
         : iterator(it),
           count(std::move(c)) {}
+};
+struct IfStmt : Stmt {
+    std::unique_ptr<Expr> condition;
+    std::vector<std::unique_ptr<Stmt>> thenBranch;
+    std::vector<std::unique_ptr<Stmt>> elseBranch;
+
+    IfStmt(std::unique_ptr<Expr> cond)
+        : condition(std::move(cond)) {}
 };
 
 } // namespace nexa

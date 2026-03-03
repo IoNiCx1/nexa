@@ -98,6 +98,27 @@ void SemanticAnalyzer::analyzeStmt(Stmt* stmt) {
         for (auto& bodyStmt : loop->body)
             analyzeStmt(bodyStmt.get());
     }
+
+    // -------------------------
+    // If Statement
+    // -------------------------
+    else if (auto ifStmt =
+        dynamic_cast<IfStmt*>(stmt)) {
+
+        TypeKind condType =
+            analyzeExpr(ifStmt->condition.get());
+
+        if (condType != TypeKind::Bool) {
+            std::cerr << "If condition must be bool\n";
+            exit(1);
+        }
+
+        for (auto& s : ifStmt->thenBranch)
+            analyzeStmt(s.get());
+
+        for (auto& s : ifStmt->elseBranch)
+            analyzeStmt(s.get());
+    }
 }
 
 // =============================
@@ -143,59 +164,70 @@ TypeKind SemanticAnalyzer::analyzeExpr(Expr* expr) {
     }
 
     // -------------------------
-// Array Literal
-// -------------------------
-if (auto arr =
-    dynamic_cast<ArrayLiteralExpr*>(expr)) {
+    // Bool
+    // -------------------------
+    if (auto boolLit =
+        dynamic_cast<BoolLiteral*>(expr)) {
 
-    if (arr->elements.empty()) {
-        std::cerr << "Empty array not allowed\n";
-        exit(1);
+        expr->inferredType =
+            new Type(TypeKind::Bool);
+
+        return TypeKind::Bool;
     }
 
-    TypeKind first =
-        analyzeExpr(arr->elements[0].get());
+    // -------------------------
+    // Array Literal
+    // -------------------------
+    if (auto arr =
+        dynamic_cast<ArrayLiteralExpr*>(expr)) {
 
-    for (auto& el : arr->elements) {
-        TypeKind t =
-            analyzeExpr(el.get());
-
-        if (t != first) {
-            std::cerr << "Array elements must have same type\n";
+        if (arr->elements.empty()) {
+            std::cerr << "Empty array not allowed\n";
             exit(1);
         }
+
+        TypeKind first =
+            analyzeExpr(arr->elements[0].get());
+
+        for (auto& el : arr->elements) {
+            TypeKind t =
+                analyzeExpr(el.get());
+
+            if (t != first) {
+                std::cerr << "Array elements must have same type\n";
+                exit(1);
+            }
+        }
+
+        expr->inferredType = new Type(TypeKind::Array);
+        return TypeKind::Array;
     }
 
-    expr->inferredType = new Type(TypeKind::Array);
-return TypeKind::Array;
-}
+    // -------------------------
+    // Indexing
+    // -------------------------
+    if (auto index =
+        dynamic_cast<IndexExpr*>(expr)) {
 
-// -------------------------
-// Indexing
-// -------------------------
-if (auto index =
-    dynamic_cast<IndexExpr*>(expr)) {
+        TypeKind arrayType =
+            analyzeExpr(index->array.get());
 
-    TypeKind arrayType =
-        analyzeExpr(index->array.get());
+        if (arrayType != TypeKind::Array) {
+            std::cerr << "Cannot index non-array type\n";
+            exit(1);
+        }
 
-    if (arrayType != TypeKind::Array) {
-        std::cerr << "Cannot index non-array type\n";
-        exit(1);
+        TypeKind idxType =
+            analyzeExpr(index->index.get());
+
+        if (idxType != TypeKind::Int) {
+            std::cerr << "Array index must be int\n";
+            exit(1);
+        }
+
+        expr->inferredType = new Type(TypeKind::Int);
+        return TypeKind::Int;
     }
-
-    TypeKind idxType =
-        analyzeExpr(index->index.get());
-
-    if (idxType != TypeKind::Int) {
-        std::cerr << "Array index must be int\n";
-        exit(1);
-    }
-
-    // Assume int element type for now
-    expr->inferredType = new Type(TypeKind::Int);
-return TypeKind::Int;
-}
 
     // -------------------------
     // Variable
@@ -235,6 +267,20 @@ return TypeKind::Int;
             exit(1);
         }
 
+        std::string op = bin->op;
+
+        // Comparison operators return bool
+        if (op == "<"  || op == ">"  ||
+            op == "<=" || op == ">=" ||
+            op == "==" || op == "!=") {
+
+            expr->inferredType =
+                new Type(TypeKind::Bool);
+
+            return TypeKind::Bool;
+        }
+
+        // Arithmetic operators return original type
         expr->inferredType =
             new Type(left);
 

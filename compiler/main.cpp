@@ -53,6 +53,10 @@ void compileToIR(const std::string& source,
 
     Lexer lexer(source);
     auto tokens = lexer.tokenize();
+//     for (auto& t : tokens) {
+//     std::cout << static_cast<int>(t.kind)
+//               << " -> " << t.lexeme << "\n";
+// }
 
     Parser parser(tokens);
     auto program = parser.parseProgram();

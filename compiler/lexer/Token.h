@@ -17,8 +17,13 @@ enum class TokenKind {
     Int,
     Double,
     String,
+    Bool,
     Print,
     Loop,
+    If,
+    Else,
+    True,
+    False,
 
     // Operators
     Plus,
@@ -26,6 +31,12 @@ enum class TokenKind {
     Star,
     Slash,
     Assign,
+    Less,
+    LessEqual,
+    Greater,
+    GreaterEqual,
+    EqualEqual,
+    NotEqual,
 
     // Punctuation
     LeftParen,

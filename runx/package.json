@@ -30,6 +30,10 @@
         "title": "Run Nexa File"
       }
     ],
+    "files": [
+  "extension.js",
+  "bin/**"
+],
     "menus": {
       "editor/title": [
         {

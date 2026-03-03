@@ -48,6 +48,9 @@ std::unique_ptr<Program> Parser::parseProgram() {
 
 std::unique_ptr<Stmt> Parser::parseStatement() {
 
+    if (match(TokenKind::If))
+        return parseIf();
+
     if (match(TokenKind::Print))
         return parsePrint();
 
@@ -56,17 +59,83 @@ std::unique_ptr<Stmt> Parser::parseStatement() {
 
     if (check(TokenKind::Int) ||
         check(TokenKind::Double) ||
-        check(TokenKind::String)) {
-
+        check(TokenKind::String) ||
+        check(TokenKind::Bool))
         return parseVarDecl();
-    }
 
-    if (check(TokenKind::Identifier))
-        return parseAssignment();
+    // 🔥 FIXED IDENTIFIER HANDLING
+    if (check(TokenKind::Identifier)) {
+
+        auto expr = parseExpression();
+
+        if (match(TokenKind::Assign)) {
+
+            auto value = parseExpression();
+
+            if (!match(TokenKind::Semicolon)) {
+                std::cerr << "Expected ';' after assignment\n";
+                exit(1);
+            }
+
+            return std::make_unique<AssignmentStmt>(
+                std::move(expr),
+                std::move(value)
+            );
+        }
+
+        std::cerr << "Invalid statement\n";
+        exit(1);
+    }
 
     std::cerr << "Unexpected statement near token: "
               << peek().lexeme << "\n";
     exit(1);
+}
+
+// =============================
+// If Statement
+// =============================
+
+std::unique_ptr<Stmt> Parser::parseIf() {
+
+    if (!match(TokenKind::LeftParen)) {
+        std::cerr << "Expected '(' after if\n";
+        exit(1);
+    }
+
+    auto condition = parseExpression();
+
+    if (!match(TokenKind::RightParen)) {
+        std::cerr << "Expected ')' after if condition\n";
+        exit(1);
+    }
+
+    if (!match(TokenKind::LeftBrace)) {
+        std::cerr << "Expected '{' after if\n";
+        exit(1);
+    }
+
+    auto ifStmt = std::make_unique<IfStmt>(std::move(condition));
+
+    while (!check(TokenKind::RightBrace))
+        ifStmt->thenBranch.push_back(parseStatement());
+
+    match(TokenKind::RightBrace);
+
+    if (match(TokenKind::Else)) {
+
+        if (!match(TokenKind::LeftBrace)) {
+            std::cerr << "Expected '{' after else\n";
+            exit(1);
+        }
+
+        while (!check(TokenKind::RightBrace))
+            ifStmt->elseBranch.push_back(parseStatement());
+
+        match(TokenKind::RightBrace);
+    }
+
+    return ifStmt;
 }
 
 // =============================
@@ -112,16 +181,16 @@ Type* Parser::parseType() {
     if (t.lexeme == "int") base = &TYPE_INT;
     else if (t.lexeme == "double") base = &TYPE_DOUBLE;
     else if (t.lexeme == "string") base = &TYPE_STRING;
+    else if (t.lexeme == "bool") base = &TYPE_BOOL;
     else {
         std::cerr << "Unknown type\n";
         exit(1);
     }
 
-    // Strict array type handling
     if (match(TokenKind::LeftBracket)) {
 
         if (!match(TokenKind::RightBracket)) {
-            std::cerr << "Expected ']' after '[' in array type\n";
+            std::cerr << "Expected ']' in array type\n";
             exit(1);
         }
 
@@ -129,32 +198,6 @@ Type* Parser::parseType() {
     }
 
     return base;
-}
-
-// =============================
-// Assignment
-// =============================
-
-std::unique_ptr<Stmt> Parser::parseAssignment() {
-
-    auto target = parseExpression();
-
-    if (!match(TokenKind::Assign)) {
-        std::cerr << "Expected '='\n";
-        exit(1);
-    }
-
-    auto value = parseExpression();
-
-    if (!match(TokenKind::Semicolon)) {
-        std::cerr << "Expected ';' after assignment\n";
-        exit(1);
-    }
-
-    return std::make_unique<AssignmentStmt>(
-        std::move(target),
-        std::move(value)
-    );
 }
 
 // =============================
@@ -171,12 +214,12 @@ std::unique_ptr<Stmt> Parser::parsePrint() {
     auto expr = parseExpression();
 
     if (!match(TokenKind::RightParen)) {
-        std::cerr << "Expected ')' after print expression\n";
+        std::cerr << "Expected ')' after print\n";
         exit(1);
     }
 
     if (!match(TokenKind::Semicolon)) {
-        std::cerr << "Expected ';' after print statement\n";
+        std::cerr << "Expected ';' after print\n";
         exit(1);
     }
 
@@ -195,7 +238,7 @@ std::unique_ptr<Stmt> Parser::parseLoop() {
     }
 
     if (!check(TokenKind::Identifier)) {
-        std::cerr << "Expected iterator name in loop\n";
+        std::cerr << "Expected iterator name\n";
         exit(1);
     }
 
@@ -209,7 +252,7 @@ std::unique_ptr<Stmt> Parser::parseLoop() {
     auto count = parseExpression();
 
     if (!match(TokenKind::RightParen)) {
-        std::cerr << "Expected ')' after loop parameters\n";
+        std::cerr << "Expected ')' after loop\n";
         exit(1);
     }
 
@@ -223,9 +266,8 @@ std::unique_ptr<Stmt> Parser::parseLoop() {
         std::move(count)
     );
 
-    while (!check(TokenKind::RightBrace)) {
+    while (!check(TokenKind::RightBrace))
         loop->body.push_back(parseStatement());
-    }
 
     match(TokenKind::RightBrace);
 
@@ -233,15 +275,27 @@ std::unique_ptr<Stmt> Parser::parseLoop() {
 }
 
 // =============================
-// Expressions (Pratt)
+// Expression Parsing
 // =============================
 
 int Parser::getPrecedence(TokenKind kind) {
+
     switch (kind) {
-        case TokenKind::Plus:
-        case TokenKind::Minus: return 1;
+
         case TokenKind::Star:
-        case TokenKind::Slash: return 2;
+        case TokenKind::Slash: return 3;
+
+        case TokenKind::Plus:
+        case TokenKind::Minus: return 2;
+
+        case TokenKind::Less:
+        case TokenKind::LessEqual:
+        case TokenKind::Greater:
+        case TokenKind::GreaterEqual:
+        case TokenKind::EqualEqual:
+        case TokenKind::NotEqual:
+            return 1;
+
         default: return 0;
     }
 }
@@ -273,56 +327,42 @@ std::unique_ptr<Expr> Parser::parsePrimary() {
     Token t = advance();
 
     if (t.kind == TokenKind::IntegerLiteral)
-        return std::make_unique<IntegerLiteral>(
-            std::stoi(t.lexeme)
-        );
+        return std::make_unique<IntegerLiteral>(std::stoi(t.lexeme));
 
     if (t.kind == TokenKind::FloatLiteral)
-        return std::make_unique<DoubleLiteral>(
-            std::stod(t.lexeme)
-        );
+        return std::make_unique<DoubleLiteral>(std::stod(t.lexeme));
 
     if (t.kind == TokenKind::StringLiteral)
-        return std::make_unique<StringLiteral>(
-            t.lexeme
-        );
+        return std::make_unique<StringLiteral>(t.lexeme);
+
+    if (t.kind == TokenKind::True)
+        return std::make_unique<BoolLiteral>(true);
+
+    if (t.kind == TokenKind::False)
+        return std::make_unique<BoolLiteral>(false);
 
     if (t.kind == TokenKind::Identifier) {
-        auto expr =
-            std::make_unique<VariableExpr>(t.lexeme);
-
+        auto expr = std::make_unique<VariableExpr>(t.lexeme);
         return parsePostfix(std::move(expr));
     }
 
     if (t.kind == TokenKind::LeftParen) {
         auto expr = parseExpression();
-
-        if (!match(TokenKind::RightParen)) {
-            std::cerr << "Expected ')'\n";
-            exit(1);
-        }
-
+        match(TokenKind::RightParen);
         return expr;
     }
 
-    // Array Literal
     if (t.kind == TokenKind::LeftBracket) {
 
         auto array = std::make_unique<ArrayLiteralExpr>();
 
         if (!check(TokenKind::RightBracket)) {
             do {
-                array->elements.push_back(
-                    parseExpression()
-                );
+                array->elements.push_back(parseExpression());
             } while (match(TokenKind::Comma));
         }
 
-        if (!match(TokenKind::RightBracket)) {
-            std::cerr << "Expected ']' to close array literal\n";
-            exit(1);
-        }
-
+        match(TokenKind::RightBracket);
         return array;
     }
 
@@ -331,40 +371,16 @@ std::unique_ptr<Expr> Parser::parsePrimary() {
 }
 
 std::unique_ptr<Expr> Parser::parsePostfix(
-    std::unique_ptr<Expr> expr) {
-
+    std::unique_ptr<Expr> expr)
+{
     while (true) {
 
-        if (match(TokenKind::LeftParen)) {
-
-            auto call =
-                std::make_unique<CallExpr>();
-
-            call->callee =
-                dynamic_cast<VariableExpr*>(expr.get())->name;
-
-            if (!check(TokenKind::RightParen)) {
-                do {
-                    call->arguments.push_back(
-                        parseExpression()
-                    );
-                } while (match(TokenKind::Comma));
-            }
-
-            if (!match(TokenKind::RightParen)) {
-                std::cerr << "Expected ')' after function call\n";
-                exit(1);
-            }
-
-            expr = std::move(call);
-        }
-
-        else if (match(TokenKind::LeftBracket)) {
+        if (match(TokenKind::LeftBracket)) {
 
             auto index = parseExpression();
 
             if (!match(TokenKind::RightBracket)) {
-                std::cerr << "Expected ']' after index expression\n";
+                std::cerr << "Expected ']' after index\n";
                 exit(1);
             }
 
@@ -373,7 +389,6 @@ std::unique_ptr<Expr> Parser::parsePostfix(
                 std::move(index)
             );
         }
-
         else break;
     }
 

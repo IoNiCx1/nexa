@@ -1,5 +1,6 @@
 #include "CodeGen.h"
 
+#include <iostream>
 #include <llvm/IR/Type.h>
 #include <llvm/IR/DerivedTypes.h>
 #include <llvm/IR/Constants.h>
@@ -28,19 +29,6 @@ CodeGen::CodeGen()
         "printf",
         module.get()
     );
-
-    auto mallocType = llvm::FunctionType::get(
-        llvm::PointerType::get(context, 0),
-        llvm::Type::getInt64Ty(context),
-        false
-    );
-
-    mallocFunc = llvm::Function::Create(
-        mallocType,
-        llvm::Function::ExternalLinkage,
-        "malloc",
-        module.get()
-    );
 }
 
 llvm::Module* CodeGen::getModule() {
@@ -62,13 +50,17 @@ llvm::Type* CodeGen::getLLVMType(Type* type)
     if (type->isString())
         return llvm::PointerType::get(context, 0);
 
-    if (type->kind == TypeKind::Array)
+    if (type->isBool())
+        return llvm::Type::getInt1Ty(context);
+
+    if (type->isArray())
         return llvm::PointerType::get(
             llvm::Type::getInt32Ty(context),
             0
         );
 
-    return nullptr;
+    std::cerr << "Unknown LLVM type\n";
+    exit(1);
 }
 
 // =============================
@@ -92,11 +84,7 @@ void CodeGen::generate(Program& program)
         );
 
     auto entry =
-        llvm::BasicBlock::Create(
-            context,
-            "entry",
-            mainFunc
-        );
+        llvm::BasicBlock::Create(context, "entry", mainFunc);
 
     builder.SetInsertPoint(entry);
 
@@ -119,80 +107,97 @@ void CodeGen::generate(Program& program)
 
 void CodeGen::generateStmt(Stmt* stmt)
 {
+    // -------------------------
+    // Variable Declaration
+    // -------------------------
     if (auto var = dynamic_cast<VarDeclStmt*>(stmt))
     {
-        auto initVal =
-            generateExpr(var->initializer.get());
+        auto initVal = generateExpr(var->initializer.get());
 
-        if (var->declaredType->kind == TypeKind::Array)
+        if (var->declaredType->isArray())
         {
             namedValues[var->name] = initVal;
         }
         else
         {
-            auto llvmType =
-                getLLVMType(var->declaredType);
-
-            auto alloca =
-                builder.CreateAlloca(llvmType);
-
+            auto llvmType = getLLVMType(var->declaredType);
+            auto alloca = builder.CreateAlloca(llvmType);
             builder.CreateStore(initVal, alloca);
-
             namedValues[var->name] = alloca;
         }
     }
 
-    else if (auto assign =
-        dynamic_cast<AssignmentStmt*>(stmt))
+    // -------------------------
+    // Assignment
+    // -------------------------
+    else if (auto assign = dynamic_cast<AssignmentStmt*>(stmt))
     {
-        auto value =
-            generateExpr(assign->value.get());
+        auto value = generateExpr(assign->value.get());
 
-        if (auto var =
-            dynamic_cast<VariableExpr*>(assign->target.get()))
+        if (auto var = dynamic_cast<VariableExpr*>(assign->target.get()))
         {
             auto ptr = namedValues[var->name];
             builder.CreateStore(value, ptr);
         }
+        else
+        {
+            std::cerr << "Invalid assignment target\n";
+            exit(1);
+        }
     }
 
-    else if (auto print =
-        dynamic_cast<PrintStmt*>(stmt))
+    // -------------------------
+    // Print
+    // -------------------------
+    else if (auto print = dynamic_cast<PrintStmt*>(stmt))
     {
-        auto val =
-            generateExpr(print->expression.get());
+        auto val = generateExpr(print->expression.get());
+        auto type = print->expression->inferredType;
 
-        auto type =
-            print->expression->inferredType;
+        if (!val)
+        {
+            std::cerr << "Print received null value\n";
+            exit(1);
+        }
 
         if (type->isInt())
         {
-            auto fmt =
-                builder.CreateGlobalStringPtr("%d\n");
+            auto fmt = builder.CreateGlobalStringPtr("%d\n");
             builder.CreateCall(printfFunc, {fmt, val});
         }
         else if (type->isDouble())
         {
-            auto fmt =
-                builder.CreateGlobalStringPtr("%f\n");
+            auto fmt = builder.CreateGlobalStringPtr("%f\n");
             builder.CreateCall(printfFunc, {fmt, val});
         }
         else if (type->isString())
         {
-            auto fmt =
-                builder.CreateGlobalStringPtr("%s\n");
+            auto fmt = builder.CreateGlobalStringPtr("%s\n");
             builder.CreateCall(printfFunc, {fmt, val});
+        }
+        else if (type->isBool())
+        {
+            auto fmt = builder.CreateGlobalStringPtr("%d\n");
+            auto ext = builder.CreateZExt(
+                val,
+                llvm::Type::getInt32Ty(context)
+            );
+            builder.CreateCall(printfFunc, {fmt, ext});
+        }
+        else
+        {
+            std::cerr << "Unsupported print type\n";
+            exit(1);
         }
     }
 
-    else if (auto loop =
-        dynamic_cast<LoopStmt*>(stmt))
+    // -------------------------
+    // Loop
+    // -------------------------
+    else if (auto loop = dynamic_cast<LoopStmt*>(stmt))
     {
-        auto countVal =
-            generateExpr(loop->count.get());
-
-        auto function =
-            builder.GetInsertBlock()->getParent();
+        auto countVal = generateExpr(loop->count.get());
+        auto function = builder.GetInsertBlock()->getParent();
 
         auto loopVar =
             builder.CreateAlloca(
@@ -240,7 +245,10 @@ void CodeGen::generateStmt(Stmt* stmt)
 
         auto increment =
             builder.CreateAdd(
-                current,
+                builder.CreateLoad(
+                    llvm::Type::getInt32Ty(context),
+                    loopVar
+                ),
                 llvm::ConstantInt::get(
                     llvm::Type::getInt32Ty(context),
                     1
@@ -252,6 +260,38 @@ void CodeGen::generateStmt(Stmt* stmt)
 
         builder.SetInsertPoint(endBlock);
     }
+
+    // -------------------------
+    // If / Else
+    // -------------------------
+    else if (auto ifStmt = dynamic_cast<IfStmt*>(stmt))
+    {
+        auto condition = generateExpr(ifStmt->condition.get());
+        auto function = builder.GetInsertBlock()->getParent();
+
+        auto thenBlock =
+            llvm::BasicBlock::Create(context, "then", function);
+
+        auto elseBlock =
+            llvm::BasicBlock::Create(context, "else", function);
+
+        auto mergeBlock =
+            llvm::BasicBlock::Create(context, "ifcont", function);
+
+        builder.CreateCondBr(condition, thenBlock, elseBlock);
+
+        builder.SetInsertPoint(thenBlock);
+        for (auto& s : ifStmt->thenBranch)
+            generateStmt(s.get());
+        builder.CreateBr(mergeBlock);
+
+        builder.SetInsertPoint(elseBlock);
+        for (auto& s : ifStmt->elseBranch)
+            generateStmt(s.get());
+        builder.CreateBr(mergeBlock);
+
+        builder.SetInsertPoint(mergeBlock);
+    }
 }
 
 // =============================
@@ -260,6 +300,32 @@ void CodeGen::generateStmt(Stmt* stmt)
 
 llvm::Value* CodeGen::generateExpr(Expr* expr)
 {
+    // Bool
+    if (auto boolLit = dynamic_cast<BoolLiteral*>(expr))
+        return llvm::ConstantInt::get(
+            llvm::Type::getInt1Ty(context),
+            boolLit->value ? 1 : 0
+        );
+
+    // Integer
+    if (auto intLit = dynamic_cast<IntegerLiteral*>(expr))
+        return llvm::ConstantInt::get(
+            llvm::Type::getInt32Ty(context),
+            intLit->value
+        );
+
+    // Double
+    if (auto dblLit = dynamic_cast<DoubleLiteral*>(expr))
+        return llvm::ConstantFP::get(
+            llvm::Type::getDoubleTy(context),
+            dblLit->value
+        );
+
+    // String
+    if (auto strLit = dynamic_cast<StringLiteral*>(expr))
+        return builder.CreateGlobalStringPtr(strLit->value);
+
+    // Array Literal
     if (auto arr = dynamic_cast<ArrayLiteralExpr*>(expr))
     {
         int size = arr->elements.size();
@@ -300,6 +366,7 @@ llvm::Value* CodeGen::generateExpr(Expr* expr)
         return arrayAlloc;
     }
 
+    // Index
     if (auto index = dynamic_cast<IndexExpr*>(expr))
     {
         llvm::Value* arrayPtr =
@@ -317,38 +384,12 @@ llvm::Value* CodeGen::generateExpr(Expr* expr)
         return builder.CreateLoad(elemType, elementPtr);
     }
 
-    if (auto intLit =
-        dynamic_cast<IntegerLiteral*>(expr))
-    {
-        return llvm::ConstantInt::get(
-            llvm::Type::getInt32Ty(context),
-            intLit->value
-        );
-    }
-
-    if (auto dblLit =
-        dynamic_cast<DoubleLiteral*>(expr))
-    {
-        return llvm::ConstantFP::get(
-            llvm::Type::getDoubleTy(context),
-            dblLit->value
-        );
-    }
-
-    if (auto strLit =
-        dynamic_cast<StringLiteral*>(expr))
-    {
-        return builder.CreateGlobalStringPtr(
-            strLit->value
-        );
-    }
-
-    if (auto var =
-        dynamic_cast<VariableExpr*>(expr))
+    // Variable
+    if (auto var = dynamic_cast<VariableExpr*>(expr))
     {
         auto ptr = namedValues[var->name];
 
-        if (expr->inferredType->kind == TypeKind::Array)
+        if (expr->inferredType->isArray())
             return ptr;
 
         return builder.CreateLoad(
@@ -357,31 +398,49 @@ llvm::Value* CodeGen::generateExpr(Expr* expr)
         );
     }
 
-    if (auto bin =
-        dynamic_cast<BinaryExpr*>(expr))
+    // Binary
+    if (auto bin = dynamic_cast<BinaryExpr*>(expr))
     {
-        auto left =
-            generateExpr(bin->left.get());
+        auto left = generateExpr(bin->left.get());
+        auto right = generateExpr(bin->right.get());
+        std::string op = bin->op;
 
-        auto right =
-            generateExpr(bin->right.get());
+        // Comparisons
+        if (expr->inferredType->isBool())
+        {
+            if (bin->left->inferredType->isInt())
+            {
+                if (op == "==") return builder.CreateICmpEQ(left, right);
+                if (op == "!=") return builder.CreateICmpNE(left, right);
+                if (op == "<")  return builder.CreateICmpSLT(left, right);
+                if (op == "<=") return builder.CreateICmpSLE(left, right);
+                if (op == ">")  return builder.CreateICmpSGT(left, right);
+                if (op == ">=") return builder.CreateICmpSGE(left, right);
+            }
+        }
 
+        // Int arithmetic
         if (expr->inferredType->isInt())
         {
-            if (bin->op == "+") return builder.CreateAdd(left, right);
-            if (bin->op == "-") return builder.CreateSub(left, right);
-            if (bin->op == "*") return builder.CreateMul(left, right);
-            if (bin->op == "/") return builder.CreateSDiv(left, right);
+            if (op == "+") return builder.CreateAdd(left, right);
+            if (op == "-") return builder.CreateSub(left, right);
+            if (op == "*") return builder.CreateMul(left, right);
+            if (op == "/") return builder.CreateSDiv(left, right);
         }
 
+        // Double arithmetic
         if (expr->inferredType->isDouble())
         {
-            if (bin->op == "+") return builder.CreateFAdd(left, right);
-            if (bin->op == "-") return builder.CreateFSub(left, right);
-            if (bin->op == "*") return builder.CreateFMul(left, right);
-            if (bin->op == "/") return builder.CreateFDiv(left, right);
+            if (op == "+") return builder.CreateFAdd(left, right);
+            if (op == "-") return builder.CreateFSub(left, right);
+            if (op == "*") return builder.CreateFMul(left, right);
+            if (op == "/") return builder.CreateFDiv(left, right);
         }
+
+        std::cerr << "Unsupported binary operator: " << op << "\n";
+        exit(1);
     }
 
-    return nullptr;
+    std::cerr << "Unknown expression in CodeGen\n";
+    exit(1);
 }

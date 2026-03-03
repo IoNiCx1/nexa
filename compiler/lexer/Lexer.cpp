@@ -67,7 +67,11 @@ Token Lexer::identifier() {
     if (lexeme == "string") return makeToken(TokenKind::String, lexeme);
     if (lexeme == "print") return makeToken(TokenKind::Print, lexeme);
     if (lexeme == "loop") return makeToken(TokenKind::Loop, lexeme);
-
+    if (lexeme == "if") return makeToken(TokenKind::If, lexeme);
+if (lexeme == "else") return makeToken(TokenKind::Else, lexeme);
+if (lexeme == "true") return makeToken(TokenKind::True, lexeme);
+if (lexeme == "false") return makeToken(TokenKind::False, lexeme);
+if (lexeme == "bool") return makeToken(TokenKind::Bool, lexeme);
     return makeToken(TokenKind::Identifier, lexeme);
 }
 
@@ -105,37 +109,145 @@ Token Lexer::stringLiteral() {
 std::vector<Token> Lexer::tokenize() {
     std::vector<Token> tokens;
 
-    while (peek() != '\0') {
+    while (true) {
 
         skipWhitespace();
+
         char c = peek();
 
+        if (c == '\0')
+            break;
+
+        // Identifier or keyword
         if (isalpha(c) || c == '_') {
             tokens.push_back(identifier());
+            continue;
         }
-        else if (isdigit(c)) {
+
+        // Number
+        if (isdigit(c)) {
             tokens.push_back(number());
+            continue;
         }
-        else {
-            switch (c) {
-                case '+': advance(); tokens.push_back(makeToken(TokenKind::Plus, "+")); break;
-                case '-': advance(); tokens.push_back(makeToken(TokenKind::Minus, "-")); break;
-                case '*': advance(); tokens.push_back(makeToken(TokenKind::Star, "*")); break;
-                case '/': advance(); tokens.push_back(makeToken(TokenKind::Slash, "/")); break;
-                case '=': advance(); tokens.push_back(makeToken(TokenKind::Assign, "=")); break;
-                case '(': advance(); tokens.push_back(makeToken(TokenKind::LeftParen, "(")); break;
-                case ')': advance(); tokens.push_back(makeToken(TokenKind::RightParen, ")")); break;
-                case '{': advance(); tokens.push_back(makeToken(TokenKind::LeftBrace, "{")); break;
-                case '}': advance(); tokens.push_back(makeToken(TokenKind::RightBrace, "}")); break;
-                case '[': advance(); tokens.push_back(makeToken(TokenKind::LeftBracket, "[")); break;
-                case ']': advance(); tokens.push_back(makeToken(TokenKind::RightBracket, "]")); break;
-                case ',': advance(); tokens.push_back(makeToken(TokenKind::Comma, ",")); break;
-                case ';': advance(); tokens.push_back(makeToken(TokenKind::Semicolon, ";")); break;
-                case '"': tokens.push_back(stringLiteral()); break;
-                default:
+
+        // String
+        if (c == '"') {
+            tokens.push_back(stringLiteral());
+            continue;
+        }
+
+        // Operators & punctuation
+        switch (c) {
+
+            // Arithmetic
+            case '+':
+                advance();
+                tokens.push_back(makeToken(TokenKind::Plus, "+"));
+                break;
+
+            case '-':
+                advance();
+                tokens.push_back(makeToken(TokenKind::Minus, "-"));
+                break;
+
+            case '*':
+                advance();
+                tokens.push_back(makeToken(TokenKind::Star, "*"));
+                break;
+
+            case '/':
+                advance();
+                tokens.push_back(makeToken(TokenKind::Slash, "/"));
+                break;
+
+            // Assignment / Equality
+            case '=':
+                advance();
+                if (peek() == '=') {
                     advance();
-                    break;
-            }
+                    tokens.push_back(makeToken(TokenKind::EqualEqual, "=="));
+                } else {
+                    tokens.push_back(makeToken(TokenKind::Assign, "="));
+                }
+                break;
+
+            case '!':
+                advance();
+                if (peek() == '=') {
+                    advance();
+                    tokens.push_back(makeToken(TokenKind::NotEqual, "!="));
+                } else {
+                    tokens.push_back(makeToken(TokenKind::Invalid, "!"));
+                }
+                break;
+
+            // Comparisons
+            case '<':
+                advance();
+                if (peek() == '=') {
+                    advance();
+                    tokens.push_back(makeToken(TokenKind::LessEqual, "<="));
+                } else {
+                    tokens.push_back(makeToken(TokenKind::Less, "<"));
+                }
+                break;
+
+            case '>':
+                advance();
+                if (peek() == '=') {
+                    advance();
+                    tokens.push_back(makeToken(TokenKind::GreaterEqual, ">="));
+                } else {
+                    tokens.push_back(makeToken(TokenKind::Greater, ">"));
+                }
+                break;
+
+            // Punctuation
+            case '(':
+                advance();
+                tokens.push_back(makeToken(TokenKind::LeftParen, "("));
+                break;
+
+            case ')':
+                advance();
+                tokens.push_back(makeToken(TokenKind::RightParen, ")"));
+                break;
+
+            case '{':
+                advance();
+                tokens.push_back(makeToken(TokenKind::LeftBrace, "{"));
+                break;
+
+            case '}':
+                advance();
+                tokens.push_back(makeToken(TokenKind::RightBrace, "}"));
+                break;
+
+            case '[':
+                advance();
+                tokens.push_back(makeToken(TokenKind::LeftBracket, "["));
+                break;
+
+            case ']':
+                advance();
+                tokens.push_back(makeToken(TokenKind::RightBracket, "]"));
+                break;
+
+            case ',':
+                advance();
+                tokens.push_back(makeToken(TokenKind::Comma, ","));
+                break;
+
+            case ';':
+                advance();
+                tokens.push_back(makeToken(TokenKind::Semicolon, ";"));
+                break;
+
+            default:
+                // Unknown character
+                advance();
+                tokens.push_back(makeToken(TokenKind::Invalid, std::string(1, c)));
+                break;
         }
     }
 

@@ -1,5 +1,42 @@
-int[] a = [10, 20, 30, 40];
+int x = 10;
+int y = 5;
+int z = x + y * 2;
+
+print(x);
+print(y);
+print(z);
+
+double a = 3.5;
+double b = 1.5;
+double c = a + b * 2.0;
+
+print(a);
+print(b);
+print(c);
+
+string msg = "Nexa Compiler Working";
+print(msg);
+
+x = x + 100;
+print(x);
+
+int[] arr = [10, 20, 30, 40];
 
 loop(i, 4) {
-    print(a[i]);
+    print(arr[i]);
+}
+
+int[] arr2 = [1 + 2, 3 * 4, 10 - 5];
+
+loop(k, 3) {
+    print(arr2[k]);
+}
+
+int complex = (5 + 3) * (2 + 4);
+print(complex);
+
+int count = 3 + 1;
+
+loop(m, count) {
+    print(m);
 }
