@@ -7,6 +7,7 @@
 #include <iostream>
 #include <sstream>
 #include <cstdlib>
+#include <string>
 
 #include <llvm/Support/raw_ostream.h>
 
@@ -53,10 +54,14 @@ void compileToIR(const std::string& source,
 
     Lexer lexer(source);
     auto tokens = lexer.tokenize();
-//     for (auto& t : tokens) {
-//     std::cout << static_cast<int>(t.kind)
-//               << " -> " << t.lexeme << "\n";
-// }
+
+    // Debug tokens if needed
+    /*
+    for (auto& t : tokens) {
+        std::cout << static_cast<int>(t.kind)
+                  << " -> " << t.lexeme << "\n";
+    }
+    */
 
     Parser parser(tokens);
     auto program = parser.parseProgram();
@@ -80,6 +85,27 @@ void compileToIR(const std::string& source,
 }
 
 // =============================
+// Extract base filename
+// =============================
+
+std::string getBaseName(const std::string& path) {
+
+    size_t slash = path.find_last_of("/\\");
+    std::string filename =
+        (slash == std::string::npos)
+        ? path
+        : path.substr(slash + 1);
+
+    size_t dot = filename.find_last_of('.');
+    std::string base =
+        (dot == std::string::npos)
+        ? filename
+        : filename.substr(0, dot);
+
+    return base;
+}
+
+// =============================
 // Main
 // =============================
 
@@ -92,13 +118,24 @@ int main(int argc, char** argv) {
 
     std::string file = argv[1];
 
+    // Read source
     std::string source = readFile(file);
 
-    std::string irFile = "output.ll";
-    std::string exeFile = "a.out";
+    // Extract filename
+    std::string base = getBaseName(file);
 
+    std::string irFile = base + ".ll";
+
+#ifdef _WIN32
+    std::string exeFile = base + ".exe";
+#else
+    std::string exeFile = base;
+#endif
+
+    // Compile to LLVM IR
     compileToIR(source, irFile);
 
+    // Compile with clang
     std::string clangCmd =
         "clang " + irFile + " -o " + exeFile;
 
@@ -107,7 +144,13 @@ int main(int argc, char** argv) {
         return 1;
     }
 
+    // Run executable
+#ifdef _WIN32
+    std::string runCmd = exeFile;
+#else
     std::string runCmd = "./" + exeFile;
+#endif
+
     system(runCmd.c_str());
 
     return 0;

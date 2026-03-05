@@ -27,6 +27,8 @@ CMakeFiles/nexa.dir/compiler/ir/CodeGen.cpp.o
  /usr/include/c++/15/bits/allocator.h
  /usr/include/c++/15/bits/atomic_base.h
  /usr/include/c++/15/bits/atomic_lockfree_defines.h
+ /usr/include/c++/15/bits/basic_ios.h
+ /usr/include/c++/15/bits/basic_ios.tcc
  /usr/include/c++/15/bits/basic_string.h
  /usr/include/c++/15/bits/basic_string.tcc
  /usr/include/c++/15/bits/char_traits.h
@@ -47,9 +49,12 @@ CMakeFiles/nexa.dir/compiler/ir/CodeGen.cpp.o
  /usr/include/c++/15/bits/hashtable_policy.h
  /usr/include/c++/15/bits/invoke.h
  /usr/include/c++/15/bits/ios_base.h
+ /usr/include/c++/15/bits/istream.tcc
  /usr/include/c++/15/bits/list.tcc
  /usr/include/c++/15/bits/locale_classes.h
  /usr/include/c++/15/bits/locale_classes.tcc
+ /usr/include/c++/15/bits/locale_facets.h
+ /usr/include/c++/15/bits/locale_facets.tcc
  /usr/include/c++/15/bits/localefwd.h
  /usr/include/c++/15/bits/memory_resource.h
  /usr/include/c++/15/bits/memoryfwd.h
@@ -57,6 +62,8 @@ CMakeFiles/nexa.dir/compiler/ir/CodeGen.cpp.o
  /usr/include/c++/15/bits/nested_exception.h
  /usr/include/c++/15/bits/new_allocator.h
  /usr/include/c++/15/bits/node_handle.h
+ /usr/include/c++/15/bits/ostream.h
+ /usr/include/c++/15/bits/ostream.tcc
  /usr/include/c++/15/bits/ostream_insert.h
  /usr/include/c++/15/bits/postypes.h
  /usr/include/c++/15/bits/predefined_ops.h
@@ -111,6 +118,7 @@ CMakeFiles/nexa.dir/compiler/ir/CodeGen.cpp.o
  /usr/include/c++/15/cstdlib
  /usr/include/c++/15/cstring
  /usr/include/c++/15/cwchar
+ /usr/include/c++/15/cwctype
  /usr/include/c++/15/debug/assertions.h
  /usr/include/c++/15/debug/debug.h
  /usr/include/c++/15/exception
@@ -123,13 +131,17 @@ CMakeFiles/nexa.dir/compiler/ir/CodeGen.cpp.o
  /usr/include/c++/15/ext/type_traits.h
  /usr/include/c++/15/functional
  /usr/include/c++/15/initializer_list
+ /usr/include/c++/15/ios
  /usr/include/c++/15/iosfwd
+ /usr/include/c++/15/iostream
+ /usr/include/c++/15/istream
  /usr/include/c++/15/iterator
  /usr/include/c++/15/limits
  /usr/include/c++/15/list
  /usr/include/c++/15/memory
  /usr/include/c++/15/new
  /usr/include/c++/15/optional
+ /usr/include/c++/15/ostream
  /usr/include/c++/15/pstl/execution_defs.h
  /usr/include/c++/15/pstl/glue_algorithm_defs.h
  /usr/include/c++/15/pstl/glue_memory_defs.h
@@ -169,6 +181,7 @@ CMakeFiles/nexa.dir/compiler/ir/CodeGen.cpp.o
  /usr/include/strings.h
  /usr/include/time.h
  /usr/include/wchar.h
+ /usr/include/wctype.h
  /usr/include/x86_64-linux-gnu/bits/atomic_wide_counter.h
  /usr/include/x86_64-linux-gnu/bits/byteswap.h
  /usr/include/x86_64-linux-gnu/bits/cpu-set.h
@@ -232,6 +245,7 @@ CMakeFiles/nexa.dir/compiler/ir/CodeGen.cpp.o
  /usr/include/x86_64-linux-gnu/bits/waitflags.h
  /usr/include/x86_64-linux-gnu/bits/waitstatus.h
  /usr/include/x86_64-linux-gnu/bits/wchar.h
+ /usr/include/x86_64-linux-gnu/bits/wctype-wchar.h
  /usr/include/x86_64-linux-gnu/bits/wordsize.h
  /usr/include/x86_64-linux-gnu/bits/xopen_lim.h
  /usr/include/x86_64-linux-gnu/c++/15/bits/atomic_word.h
@@ -239,6 +253,8 @@ CMakeFiles/nexa.dir/compiler/ir/CodeGen.cpp.o
  /usr/include/x86_64-linux-gnu/c++/15/bits/c++config.h
  /usr/include/x86_64-linux-gnu/c++/15/bits/c++locale.h
  /usr/include/x86_64-linux-gnu/c++/15/bits/cpu_defines.h
+ /usr/include/x86_64-linux-gnu/c++/15/bits/ctype_base.h
+ /usr/include/x86_64-linux-gnu/c++/15/bits/ctype_inline.h
  /usr/include/x86_64-linux-gnu/c++/15/bits/error_constants.h
  /usr/include/x86_64-linux-gnu/c++/15/bits/gthr-default.h
  /usr/include/x86_64-linux-gnu/c++/15/bits/gthr.h
