@@ -1,5 +1,6 @@
 #include "CodeGen.h"
-
+#include <llvm/TargetParser/Triple.h>
+#include <llvm/TargetParser/Host.h>
 #include <iostream>
 #include <llvm/IR/Type.h>
 #include <llvm/IR/DerivedTypes.h>
@@ -17,6 +18,8 @@ CodeGen::CodeGen()
     : module(std::make_unique<llvm::Module>("nexa_module", context)),
       builder(context)
 {
+    module->setTargetTriple(llvm::Triple(llvm::sys::getDefaultTargetTriple()));
+
     auto printfType = llvm::FunctionType::get(
         llvm::Type::getInt32Ty(context),
         llvm::PointerType::get(context, 0),

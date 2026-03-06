@@ -9,29 +9,36 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # -----------------------------
 find_package(LLVM REQUIRED CONFIG)
 message(STATUS "Using LLVM ${LLVM_PACKAGE_VERSION}")
+message(STATUS "LLVM dir: ${LLVM_DIR}")
 
-include_directories(
+add_definitions(${LLVM_DEFINITIONS})
+
+
+# -----------------------------
+# Executable
+# -----------------------------
+add_executable(nexa
+compiler/main.cpp
+compiler/lexer/Lexer.cpp
+compiler/parser/Parser.cpp
+compiler/sema/SemanticAnalyzer.cpp
+compiler/ir/CodeGen.cpp
+)
+
+target_include_directories(nexa PRIVATE
+    /usr/include/llvm-21
+)
+
+target_include_directories(nexa PRIVATE
     ${LLVM_INCLUDE_DIRS}
+    /usr/include/llvm-21
     compiler
     compiler/lexer
     compiler/parser
     compiler/ast
     compiler/sema
     compiler/ir
-)
-
-add_definitions(${LLVM_DEFINITIONS})
-
-# -----------------------------
-# Executable
-# -----------------------------
-add_executable(nexa
-    compiler/main.cpp
-    compiler/lexer/Lexer.cpp
-    compiler/parser/Parser.cpp
-    compiler/sema/SemanticAnalyzer.cpp
-    compiler/ir/CodeGen.cpp
-)
+)                 
 
 # -----------------------------
 # LLVM Linking
