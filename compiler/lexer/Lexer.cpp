@@ -62,16 +62,22 @@ Token Lexer::identifier() {
     while (isalnum(peek()) || peek() == '_')
         lexeme += advance();
 
+    // Existing keywords
     if (lexeme == "int") return makeToken(TokenKind::Int, lexeme);
     if (lexeme == "double") return makeToken(TokenKind::Double, lexeme);
     if (lexeme == "string") return makeToken(TokenKind::String, lexeme);
     if (lexeme == "print") return makeToken(TokenKind::Print, lexeme);
     if (lexeme == "loop") return makeToken(TokenKind::Loop, lexeme);
     if (lexeme == "if") return makeToken(TokenKind::If, lexeme);
-if (lexeme == "else") return makeToken(TokenKind::Else, lexeme);
-if (lexeme == "true") return makeToken(TokenKind::True, lexeme);
-if (lexeme == "false") return makeToken(TokenKind::False, lexeme);
-if (lexeme == "bool") return makeToken(TokenKind::Bool, lexeme);
+    if (lexeme == "else") return makeToken(TokenKind::Else, lexeme);
+    if (lexeme == "true") return makeToken(TokenKind::True, lexeme);
+    if (lexeme == "false") return makeToken(TokenKind::False, lexeme);
+    if (lexeme == "bool") return makeToken(TokenKind::Bool, lexeme);
+
+    // NEW function keywords
+    if (lexeme == "fn") return makeToken(TokenKind::Fn, lexeme);
+    if (lexeme == "return") return makeToken(TokenKind::Return, lexeme);
+
     return makeToken(TokenKind::Identifier, lexeme);
 }
 

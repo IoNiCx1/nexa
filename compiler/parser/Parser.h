@@ -40,6 +40,10 @@ private:
     std::unique_ptr<Stmt> parsePrint();
     std::unique_ptr<Stmt> parseLoop();
 
+    // NEW (for functions)
+    std::unique_ptr<Stmt> parseFunction();
+    std::unique_ptr<Stmt> parseReturn();
+
     // =============================
     // Expressions (Pratt)
     // =============================

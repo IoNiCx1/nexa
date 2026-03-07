@@ -25,6 +25,10 @@ enum class TokenKind {
     True,
     False,
 
+    // Function keywords
+    Fn,
+    Return,
+
     // Operators
     Plus,
     Minus,

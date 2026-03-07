@@ -49,6 +49,11 @@ struct StringLiteral : Expr {
     StringLiteral(const std::string& v) : value(v) {}
 };
 
+struct BoolLiteral : Expr {
+    bool value;
+    BoolLiteral(bool val) : value(val) {}
+};
+
 // =============================
 // Variable
 // =============================
@@ -69,11 +74,7 @@ struct ArrayLiteralExpr : Expr {
 // =============================
 // Index Expression
 // =============================
-struct BoolLiteral : Expr {
-    bool value;
 
-    BoolLiteral(bool val) : value(val) {}
-};
 struct IndexExpr : Expr {
     std::unique_ptr<Expr> array;
     std::unique_ptr<Expr> index;
@@ -167,6 +168,11 @@ struct LoopStmt : Stmt {
         : iterator(it),
           count(std::move(c)) {}
 };
+
+// =============================
+// If Statement
+// =============================
+
 struct IfStmt : Stmt {
     std::unique_ptr<Expr> condition;
     std::vector<std::unique_ptr<Stmt>> thenBranch;
@@ -174,6 +180,34 @@ struct IfStmt : Stmt {
 
     IfStmt(std::unique_ptr<Expr> cond)
         : condition(std::move(cond)) {}
+};
+
+// =============================
+// Function Declaration
+// =============================
+
+struct FunctionDecl : Stmt {
+    std::string name;
+    Type* returnType;
+
+    std::vector<std::pair<std::string, Type*>> params;
+    std::vector<std::unique_ptr<Stmt>> body;
+
+    FunctionDecl(const std::string& n,
+                 Type* ret)
+        : name(n),
+          returnType(ret) {}
+};
+
+// =============================
+// Return Statement
+// =============================
+
+struct ReturnStmt : Stmt {
+    std::unique_ptr<Expr> value;
+
+    ReturnStmt(std::unique_ptr<Expr> v)
+        : value(std::move(v)) {}
 };
 
 } // namespace nexa
