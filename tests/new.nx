@@ -1,0 +1,7 @@
+fn mul(int a, int b)-> int{
+    loop(a,b){
+        print("hello");
+    }
+}
+
+print(mul(2,3));
