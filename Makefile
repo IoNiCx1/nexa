@@ -301,6 +301,54 @@ compiler/sema/SemanticAnalyzer.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/nexa.dir/build.make CMakeFiles/nexa.dir/compiler/sema/SemanticAnalyzer.cpp.s
 .PHONY : compiler/sema/SemanticAnalyzer.cpp.s
 
+runtime/ai/Tensor.o: runtime/ai/Tensor.cpp.o
+.PHONY : runtime/ai/Tensor.o
+
+# target to build an object file
+runtime/ai/Tensor.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/nexa.dir/build.make CMakeFiles/nexa.dir/runtime/ai/Tensor.cpp.o
+.PHONY : runtime/ai/Tensor.cpp.o
+
+runtime/ai/Tensor.i: runtime/ai/Tensor.cpp.i
+.PHONY : runtime/ai/Tensor.i
+
+# target to preprocess a source file
+runtime/ai/Tensor.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/nexa.dir/build.make CMakeFiles/nexa.dir/runtime/ai/Tensor.cpp.i
+.PHONY : runtime/ai/Tensor.cpp.i
+
+runtime/ai/Tensor.s: runtime/ai/Tensor.cpp.s
+.PHONY : runtime/ai/Tensor.s
+
+# target to generate assembly for a file
+runtime/ai/Tensor.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/nexa.dir/build.make CMakeFiles/nexa.dir/runtime/ai/Tensor.cpp.s
+.PHONY : runtime/ai/Tensor.cpp.s
+
+runtime/ai/ai_runtime.o: runtime/ai/ai_runtime.cpp.o
+.PHONY : runtime/ai/ai_runtime.o
+
+# target to build an object file
+runtime/ai/ai_runtime.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/nexa.dir/build.make CMakeFiles/nexa.dir/runtime/ai/ai_runtime.cpp.o
+.PHONY : runtime/ai/ai_runtime.cpp.o
+
+runtime/ai/ai_runtime.i: runtime/ai/ai_runtime.cpp.i
+.PHONY : runtime/ai/ai_runtime.i
+
+# target to preprocess a source file
+runtime/ai/ai_runtime.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/nexa.dir/build.make CMakeFiles/nexa.dir/runtime/ai/ai_runtime.cpp.i
+.PHONY : runtime/ai/ai_runtime.cpp.i
+
+runtime/ai/ai_runtime.s: runtime/ai/ai_runtime.cpp.s
+.PHONY : runtime/ai/ai_runtime.s
+
+# target to generate assembly for a file
+runtime/ai/ai_runtime.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/nexa.dir/build.make CMakeFiles/nexa.dir/runtime/ai/ai_runtime.cpp.s
+.PHONY : runtime/ai/ai_runtime.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -329,6 +377,12 @@ help:
 	@echo "... compiler/sema/SemanticAnalyzer.o"
 	@echo "... compiler/sema/SemanticAnalyzer.i"
 	@echo "... compiler/sema/SemanticAnalyzer.s"
+	@echo "... runtime/ai/Tensor.o"
+	@echo "... runtime/ai/Tensor.i"
+	@echo "... runtime/ai/Tensor.s"
+	@echo "... runtime/ai/ai_runtime.o"
+	@echo "... runtime/ai/ai_runtime.i"
+	@echo "... runtime/ai/ai_runtime.s"
 .PHONY : help
 
 

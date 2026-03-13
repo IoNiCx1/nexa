@@ -78,6 +78,12 @@ Token Lexer::identifier() {
     if (lexeme == "fn") return makeToken(TokenKind::Fn, lexeme);
     if (lexeme == "return") return makeToken(TokenKind::Return, lexeme);
 
+    // =============================
+    // NEW AI KEYWORD
+    // =============================
+
+    if (lexeme == "tensor") return makeToken(TokenKind::Tensor, lexeme);
+
     return makeToken(TokenKind::Identifier, lexeme);
 }
 
@@ -250,7 +256,6 @@ std::vector<Token> Lexer::tokenize() {
                 break;
 
             default:
-                // Unknown character
                 advance();
                 tokens.push_back(makeToken(TokenKind::Invalid, std::string(1, c)));
                 break;

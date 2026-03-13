@@ -55,14 +55,6 @@ void compileToIR(const std::string& source,
     Lexer lexer(source);
     auto tokens = lexer.tokenize();
 
-    // Debug tokens if needed
-    /*
-    for (auto& t : tokens) {
-        std::cout << static_cast<int>(t.kind)
-                  << " -> " << t.lexeme << "\n";
-    }
-    */
-
     Parser parser(tokens);
     auto program = parser.parseProgram();
 
@@ -135,12 +127,12 @@ int main(int argc, char** argv) {
     // Compile to LLVM IR
     compileToIR(source, irFile);
 
-    // Compile with clang
-    std::string clangCmd =
-        "clang " + irFile + " -o " + exeFile;
+    // Link with the AI Runtime silently
+    std::string runtimeObj = "runtime/ai/tensor.o";
+    std::string clangCmd = "clang++ " + irFile + " " + runtimeObj + " -o " + exeFile + " 2>/dev/null";
 
     if (system(clangCmd.c_str()) != 0) {
-        std::cerr << "Clang compilation failed.\n";
+        std::cerr << "Error: Linker failed. Ensure runtime/ai/tensor.o exists.\n";
         return 1;
     }
 
@@ -151,7 +143,11 @@ int main(int argc, char** argv) {
     std::string runCmd = "./" + exeFile;
 #endif
 
+    // Execute the compiled nexa program
     system(runCmd.c_str());
+
+    // Cleanup temporary IR file
+    remove(irFile.c_str());
 
     return 0;
 }

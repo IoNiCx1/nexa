@@ -1,25 +1,23 @@
-#ifndef NEXA_SEMANTIC_ANALYZER_H
-#define NEXA_SEMANTIC_ANALYZER_H
+#pragma once
 
 #include "../ast/Ast.h"
-#include "../sema/Type.h"
-
-#include <unordered_map>
+#include <map>
 #include <string>
+#include <vector>
 
 namespace nexa {
 
 class SemanticAnalyzer {
 public:
     void analyze(Program& program);
+    
+    // This declaration was missing!
+    void checkExpr(Expr* expr);
+    void checkStmt(Stmt* stmt);
 
 private:
-    std::unordered_map<std::string, TypeKind> symbolTable;
-
-    void analyzeStmt(Stmt* stmt);
-    TypeKind analyzeExpr(Expr* expr);
+    // Scope stack for variables: maps name to Type pointer
+    std::vector<std::map<std::string, Type*>> symbolStack;
 };
 
-}
-
-#endif
+} // namespace nexa

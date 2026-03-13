@@ -29,6 +29,8 @@ private:
     Token advance();
     bool check(TokenKind kind);
     bool match(TokenKind kind);
+    Token consume(TokenKind kind);
+
 
     // =============================
     // Statements
@@ -39,6 +41,9 @@ private:
     std::unique_ptr<Stmt> parseAssignment();
     std::unique_ptr<Stmt> parsePrint();
     std::unique_ptr<Stmt> parseLoop();
+    // tensors
+    std::unique_ptr<Expr> parseTensorLiteral();
+
 
     // NEW (for functions)
     std::unique_ptr<Stmt> parseFunction();

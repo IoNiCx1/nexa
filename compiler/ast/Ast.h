@@ -1,16 +1,15 @@
-#ifndef NEXA_AST_H
-#define NEXA_AST_H
+#pragma once
 
-#include <memory>
 #include <string>
 #include <vector>
+#include <memory>
+#include <map>
+#include "../sema/Type.h" // Use the single source of truth
 
 namespace nexa {
 
-struct Type;
-
 // =============================
-// Base Nodes
+// Expressions
 // =============================
 
 struct Expr {
@@ -18,198 +17,126 @@ struct Expr {
     Type* inferredType = nullptr;
 };
 
-struct Stmt {
-    virtual ~Stmt() = default;
-};
-
-// =============================
-// Program
-// =============================
-
-struct Program {
-    std::vector<std::unique_ptr<Stmt>> statements;
-};
-
-// =============================
-// Literals
-// =============================
-
-struct IntegerLiteral : Expr {
+struct IntegerLiteral : public Expr {
     int value;
-    IntegerLiteral(int v) : value(v) {}
+    IntegerLiteral(int val) : value(val) {}
 };
 
-struct DoubleLiteral : Expr {
+struct DoubleLiteral : public Expr {
     double value;
-    DoubleLiteral(double v) : value(v) {}
+    DoubleLiteral(double val) : value(val) {}
 };
 
-struct StringLiteral : Expr {
+struct StringLiteral : public Expr {
     std::string value;
-    StringLiteral(const std::string& v) : value(v) {}
+    StringLiteral(const std::string& val) : value(val) {}
 };
 
-struct BoolLiteral : Expr {
+struct BoolLiteral : public Expr {
     bool value;
     BoolLiteral(bool val) : value(val) {}
 };
 
-// =============================
-// Variable
-// =============================
+struct GroupingExpr : public Expr {
+    std::unique_ptr<Expr> expression;
+    GroupingExpr(std::unique_ptr<Expr> expr) : expression(std::move(expr)) {}
+};
 
-struct VariableExpr : Expr {
+struct VariableExpr : public Expr {
     std::string name;
     VariableExpr(const std::string& n) : name(n) {}
 };
 
-// =============================
-// Array Literal
-// =============================
+struct BinaryExpr : public Expr {
+    std::unique_ptr<Expr> left;
+    std::string op;
+    std::unique_ptr<Expr> right;
+    BinaryExpr(std::unique_ptr<Expr> L, std::string O, std::unique_ptr<Expr> R)
+        : left(std::move(L)), op(O), right(std::move(R)) {}
+};
 
-struct ArrayLiteralExpr : Expr {
+struct ArrayLiteralExpr : public Expr {
     std::vector<std::unique_ptr<Expr>> elements;
 };
 
-// =============================
-// Index Expression
-// =============================
-
-struct IndexExpr : Expr {
+struct IndexExpr : public Expr {
     std::unique_ptr<Expr> array;
     std::unique_ptr<Expr> index;
-
-    IndexExpr(std::unique_ptr<Expr> arr,
-              std::unique_ptr<Expr> idx)
-        : array(std::move(arr)),
-          index(std::move(idx)) {}
+    IndexExpr(std::unique_ptr<Expr> arr, std::unique_ptr<Expr> idx)
+        : array(std::move(arr)), index(std::move(idx)) {}
 };
 
-// =============================
-// Unary / Binary
-// =============================
-
-struct UnaryExpr : Expr {
-    std::string op;
-    std::unique_ptr<Expr> operand;
-
-    UnaryExpr(const std::string& o,
-              std::unique_ptr<Expr> expr)
-        : op(o), operand(std::move(expr)) {}
+struct TensorLiteralExpr : public Expr {
+    std::vector<std::vector<std::unique_ptr<Expr>>> rows;
+    TensorLiteralExpr(std::vector<std::vector<std::unique_ptr<Expr>>> r)
+        : rows(std::move(r)) {}
 };
 
-struct BinaryExpr : Expr {
-    std::string op;
-    std::unique_ptr<Expr> left;
-    std::unique_ptr<Expr> right;
-
-    BinaryExpr(std::unique_ptr<Expr> l,
-               const std::string& o,
-               std::unique_ptr<Expr> r)
-        : op(o),
-          left(std::move(l)),
-          right(std::move(r)) {}
-};
-
-// =============================
-// Function Call
-// =============================
-
-struct CallExpr : Expr {
+struct CallExpr : public Expr {
     std::string callee;
     std::vector<std::unique_ptr<Expr>> arguments;
+    CallExpr(const std::string& c, std::vector<std::unique_ptr<Expr>> args)
+        : callee(c), arguments(std::move(args)) {}
 };
 
 // =============================
 // Statements
 // =============================
 
-struct VarDeclStmt : Stmt {
+struct Stmt {
+    virtual ~Stmt() = default;
+};
+
+struct VarDeclStmt : public Stmt {
     Type* declaredType;
     std::string name;
     std::unique_ptr<Expr> initializer;
-
-    VarDeclStmt(Type* t,
-                const std::string& n,
-                std::unique_ptr<Expr> init)
-        : declaredType(t),
-          name(n),
-          initializer(std::move(init)) {}
+    VarDeclStmt(Type* t, const std::string& n, std::unique_ptr<Expr> init)
+        : declaredType(t), name(n), initializer(std::move(init)) {}
 };
 
-struct AssignmentStmt : Stmt {
+struct AssignmentStmt : public Stmt {
     std::unique_ptr<Expr> target;
     std::unique_ptr<Expr> value;
-
-    AssignmentStmt(std::unique_ptr<Expr> t,
-                   std::unique_ptr<Expr> v)
-        : target(std::move(t)),
-          value(std::move(v)) {}
+    AssignmentStmt(std::unique_ptr<Expr> t, std::unique_ptr<Expr> v)
+        : target(std::move(t)), value(std::move(v)) {}
 };
 
-struct PrintStmt : Stmt {
+struct PrintStmt : public Stmt {
     std::unique_ptr<Expr> expression;
-
-    PrintStmt(std::unique_ptr<Expr> e)
-        : expression(std::move(e)) {}
+    PrintStmt(std::unique_ptr<Expr> expr) : expression(std::move(expr)) {}
 };
 
-// =============================
-// Loop
-// =============================
-
-struct LoopStmt : Stmt {
+struct LoopStmt : public Stmt {
     std::string iterator;
     std::unique_ptr<Expr> count;
     std::vector<std::unique_ptr<Stmt>> body;
-
-    LoopStmt(const std::string& it,
-             std::unique_ptr<Expr> c)
-        : iterator(it),
-          count(std::move(c)) {}
+    LoopStmt(const std::string& it, std::unique_ptr<Expr> c)
+        : iterator(it), count(std::move(c)) {}
 };
 
-// =============================
-// If Statement
-// =============================
-
-struct IfStmt : Stmt {
+struct IfStmt : public Stmt {
     std::unique_ptr<Expr> condition;
     std::vector<std::unique_ptr<Stmt>> thenBranch;
     std::vector<std::unique_ptr<Stmt>> elseBranch;
-
-    IfStmt(std::unique_ptr<Expr> cond)
-        : condition(std::move(cond)) {}
+    IfStmt(std::unique_ptr<Expr> cond) : condition(std::move(cond)) {}
 };
 
-// =============================
-// Function Declaration
-// =============================
-
-struct FunctionDecl : Stmt {
-    std::string name;
-    Type* returnType;
-
-    std::vector<std::pair<std::string, Type*>> params;
-    std::vector<std::unique_ptr<Stmt>> body;
-
-    FunctionDecl(const std::string& n,
-                 Type* ret)
-        : name(n),
-          returnType(ret) {}
-};
-
-// =============================
-// Return Statement
-// =============================
-
-struct ReturnStmt : Stmt {
+struct ReturnStmt : public Stmt {
     std::unique_ptr<Expr> value;
+    ReturnStmt(std::unique_ptr<Expr> val) : value(std::move(val)) {}
+};
 
-    ReturnStmt(std::unique_ptr<Expr> v)
-        : value(std::move(v)) {}
+struct FunctionDecl : public Stmt {
+    std::string name;
+    std::vector<std::pair<std::string, Type*>> params;
+    Type* returnType;
+    std::vector<std::unique_ptr<Stmt>> body;
+    FunctionDecl(const std::string& n, Type* ret) : name(n), returnType(ret) {}
+};
+
+struct Program {
+    std::vector<std::unique_ptr<Stmt>> statements;
 };
 
 } // namespace nexa
-
-#endif

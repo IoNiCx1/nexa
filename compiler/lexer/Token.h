@@ -41,6 +41,7 @@ enum class TokenKind {
     GreaterEqual,
     EqualEqual,
     NotEqual,
+    Tensor,
 
     // Punctuation
     LeftParen,
