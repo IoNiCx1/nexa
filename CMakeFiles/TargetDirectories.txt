@@ -1,7 +1,8 @@
-/home/kali/nexa/CMakeFiles/intrinsics_gen.dir
-/home/kali/nexa/CMakeFiles/omp_gen.dir
-/home/kali/nexa/CMakeFiles/acc_gen.dir
-/home/kali/nexa/CMakeFiles/RISCVTargetParserTableGen.dir
-/home/kali/nexa/CMakeFiles/nexa.dir
-/home/kali/nexa/CMakeFiles/edit_cache.dir
-/home/kali/nexa/CMakeFiles/rebuild_cache.dir
+/mnt/c/Users/Omkar Mishra/nexa/CMakeFiles/intrinsics_gen.dir
+/mnt/c/Users/Omkar Mishra/nexa/CMakeFiles/omp_gen.dir
+/mnt/c/Users/Omkar Mishra/nexa/CMakeFiles/acc_gen.dir
+/mnt/c/Users/Omkar Mishra/nexa/CMakeFiles/RISCVTargetParserTableGen.dir
+/mnt/c/Users/Omkar Mishra/nexa/CMakeFiles/nexa_runtime.dir
+/mnt/c/Users/Omkar Mishra/nexa/CMakeFiles/nexa.dir
+/mnt/c/Users/Omkar Mishra/nexa/CMakeFiles/edit_cache.dir
+/mnt/c/Users/Omkar Mishra/nexa/CMakeFiles/rebuild_cache.dir

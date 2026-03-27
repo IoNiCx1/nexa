@@ -4,108 +4,227 @@
 
 using namespace nexa;
 
-void SemanticAnalyzer::analyze(Program& program) {
-    // Create global scope
-    symbolStack.push_back({});
+// Array type singleton — int[] is the only array kind Nexa currently supports.
+// Defined here (not in Type.h) because it needs &TYPE_INT as its element type;
+// static storage duration ensures it outlives every use.
+static nexa::Type TYPE_INT_ARRAY(nexa::TypeKind::Array, &nexa::TYPE_INT);
 
-    for (auto& stmt : program.statements) {
+// ─────────────────────────────────────────────
+// Top-level entry
+// ─────────────────────────────────────────────
+
+void SemanticAnalyzer::analyze(Program& program) {
+    pushScope();   // global scope
+    for (auto& stmt : program.statements)
         checkStmt(stmt.get());
-    }
+    popScope();
 }
+
+// ─────────────────────────────────────────────
+// Statement checking
+// ─────────────────────────────────────────────
 
 void SemanticAnalyzer::checkStmt(Stmt* stmt) {
+    if (!stmt) return;
+
+    // ── Variable declaration ──────────────────
     if (auto varDecl = dynamic_cast<VarDeclStmt*>(stmt)) {
-        if (varDecl->initializer) {
+        if (varDecl->initializer)
             checkExpr(varDecl->initializer.get());
-        }
-        // Register variable in current scope
-        symbolStack.back()[varDecl->name] = varDecl->declaredType;
-    } 
-    else if (auto print = dynamic_cast<PrintStmt*>(stmt)) {
-        checkExpr(print->expression.get());
+        declare(varDecl->name, varDecl->declaredType);
+        return;
     }
-    else if (auto assign = dynamic_cast<AssignmentStmt*>(stmt)) {
+
+    // ── Print ─────────────────────────────────
+    if (auto print = dynamic_cast<PrintStmt*>(stmt)) {
+        checkExpr(print->expression.get());
+        return;
+    }
+
+    // ── Assignment ────────────────────────────
+    if (auto assign = dynamic_cast<AssignmentStmt*>(stmt)) {
         checkExpr(assign->value.get());
         if (auto varExpr = dynamic_cast<VariableExpr*>(assign->target.get())) {
-            // In a real compiler, you'd check if variable exists here
+            Type* t = lookup(varExpr->name);
+            if (!t)
+                std::cerr << "[sema] error: assignment to undeclared variable '"
+                          << varExpr->name << "'\n";
+            // Annotate the target expression too so CodeGen can load it correctly
+            varExpr->inferredType = t;
         }
+        return;
     }
-    else if (auto loop = dynamic_cast<LoopStmt*>(stmt)) {
+
+    // ── Loop ──────────────────────────────────
+    if (auto loop = dynamic_cast<LoopStmt*>(stmt)) {
         checkExpr(loop->count.get());
-        
-        // Add scope for loop
-        symbolStack.push_back({});
-        symbolStack.back()[loop->iterator] = &TYPE_INT;
-        
-        for (auto& s : loop->body) {
+
+        pushScope();
+        declare(loop->iterator, &TYPE_INT);
+
+        for (auto& s : loop->body)
             checkStmt(s.get());
-        }
-        
-        symbolStack.pop_back();
+
+        popScope();
+        return;
     }
+
+    // ── If / else ─────────────────────────────
+    if (auto ifStmt = dynamic_cast<IfStmt*>(stmt)) {
+        checkExpr(ifStmt->condition.get());
+
+        pushScope();
+        for (auto& s : ifStmt->thenBranch)
+            checkStmt(s.get());
+        popScope();
+
+        pushScope();
+        for (auto& s : ifStmt->elseBranch)
+            checkStmt(s.get());
+        popScope();
+        return;
+    }
+
+    // ── Function declaration ──────────────────
+    if (auto fn = dynamic_cast<FunctionDecl*>(stmt)) {
+        // Register the function name in the outer scope so it can be called
+        // before its definition (forward reference within the same file).
+        declare(fn->name, fn->returnType);
+
+        pushScope();
+        // Register each parameter so the body can reference them
+        for (auto& [paramName, paramType] : fn->params)
+            declare(paramName, paramType);
+
+        for (auto& s : fn->body)
+            checkStmt(s.get());
+
+        popScope();
+        return;
+    }
+
+    // ── Return ────────────────────────────────
+    if (auto ret = dynamic_cast<ReturnStmt*>(stmt)) {
+        if (ret->value)
+            checkExpr(ret->value.get());
+        return;
+    }
+
+    // Unhandled statement type — not fatal, just note it
+    std::cerr << "[sema] warning: unhandled statement type: "
+              << typeid(*stmt).name() << "\n";
 }
+
+// ─────────────────────────────────────────────
+// Expression checking + inferredType annotation
+// Every path through this function MUST set expr->inferredType
+// ─────────────────────────────────────────────
 
 void SemanticAnalyzer::checkExpr(Expr* expr) {
     if (!expr) return;
 
-    // Literals
+    // ── Literals ──────────────────────────────
     if (dynamic_cast<IntegerLiteral*>(expr)) {
         expr->inferredType = &TYPE_INT;
-    } 
-    else if (dynamic_cast<DoubleLiteral*>(expr)) {
+        return;
+    }
+    if (dynamic_cast<DoubleLiteral*>(expr)) {
         expr->inferredType = &TYPE_DOUBLE;
+        return;
     }
-    else if (dynamic_cast<StringLiteral*>(expr)) {
+    if (dynamic_cast<StringLiteral*>(expr)) {
         expr->inferredType = &TYPE_STRING;
+        return;
     }
-    else if (dynamic_cast<BoolLiteral*>(expr)) {
+    if (dynamic_cast<BoolLiteral*>(expr)) {
         expr->inferredType = &TYPE_BOOL;
+        return;
     }
-    
-    // Grouping (Parentheses)
-    else if (auto group = dynamic_cast<GroupingExpr*>(expr)) {
+
+    // ── Grouping ──────────────────────────────
+    if (auto group = dynamic_cast<GroupingExpr*>(expr)) {
         checkExpr(group->expression.get());
         expr->inferredType = group->expression->inferredType;
+        return;
     }
 
-    // Tensors
-    else if (auto tensorLit = dynamic_cast<TensorLiteralExpr*>(expr)) {
+    // ── Array literal: [1, 2, 3] ─────────────
+    if (auto arrLit = dynamic_cast<ArrayLiteralExpr*>(expr)) {
+        for (auto& elem : arrLit->elements)
+            checkExpr(elem.get());
+        expr->inferredType = &TYPE_INT_ARRAY;
+        return;
+    }
+
+    // ── Array index: arr[i] ───────────────────
+    if (auto idxExpr = dynamic_cast<IndexExpr*>(expr)) {
+        checkExpr(idxExpr->array.get());
+        checkExpr(idxExpr->index.get());
+        // Indexing an int[] yields int — extend here if you add typed arrays
+        expr->inferredType = &TYPE_INT;
+        return;
+    }
+
+    // ── Tensor literal ────────────────────────
+    if (auto tensorLit = dynamic_cast<TensorLiteralExpr*>(expr)) {
+        for (auto& row : tensorLit->rows)
+            for (auto& elem : row)
+                checkExpr(elem.get());
         expr->inferredType = &TYPE_TENSOR;
-        for (auto& row : tensorLit->rows) {
-            for (auto& element : row) {
-                checkExpr(element.get());
-            }
-        }
+        return;
     }
 
-    // Variables
-    else if (auto var = dynamic_cast<VariableExpr*>(expr)) {
-        // Look up in symbol stack (from top to bottom)
-        bool found = false;
-        for (auto it = symbolStack.rbegin(); it != symbolStack.rend(); ++it) {
-            if (it->count(var->name)) {
-                expr->inferredType = (*it)[var->name];
-                found = true;
-                break;
-            }
+    // ── Variable reference ────────────────────
+    if (auto var = dynamic_cast<VariableExpr*>(expr)) {
+        Type* t = lookup(var->name);
+        if (!t) {
+            std::cerr << "[sema] error: undefined variable '" << var->name << "'\n";
+            expr->inferredType = &TYPE_INT;   // safe fallback — keeps CodeGen alive
+        } else {
+            expr->inferredType = t;
         }
-        if (!found) {
-            std::cerr << "Semantic Error: Undefined variable '" << var->name << "'\n";
-        }
+        return;
     }
 
-    // Binary Operations
-    else if (auto bin = dynamic_cast<BinaryExpr*>(expr)) {
+    // ── Binary expression ─────────────────────
+    if (auto bin = dynamic_cast<BinaryExpr*>(expr)) {
         checkExpr(bin->left.get());
         checkExpr(bin->right.get());
 
-        // Basic type promotion: if either side is double, result is double
-        if (bin->left->inferredType->isDouble() || bin->right->inferredType->isDouble()) {
-            expr->inferredType = &TYPE_DOUBLE;
-        } else if (bin->left->inferredType->isTensor()) {
+        auto* lType = bin->left->inferredType;
+        auto* rType = bin->right->inferredType;
+
+        // Null guards — should not happen after the fixes above but be safe
+        if (!lType && !rType) { expr->inferredType = &TYPE_INT; return; }
+        if (!lType) lType = rType;
+        if (!rType) rType = lType;
+
+        // Type promotion rules:
+        //   tensor op tensor → tensor
+        //   anything with double → double
+        //   bool op bool → int  (e.g. true + true = 2)
+        //   otherwise → int
+        if (lType->isTensor() || rType->isTensor())
             expr->inferredType = &TYPE_TENSOR;
-        } else {
+        else if (lType->isDouble() || rType->isDouble())
+            expr->inferredType = &TYPE_DOUBLE;
+        else
             expr->inferredType = &TYPE_INT;
-        }
+        return;
     }
+
+    // ── Function call ─────────────────────────
+    if (auto call = dynamic_cast<CallExpr*>(expr)) {
+        for (auto& arg : call->arguments)
+            checkExpr(arg.get());
+        // Look up the function's return type from the symbol table
+        Type* retType = lookup(call->callee);
+        expr->inferredType = retType ? retType : &TYPE_INT;
+        return;
+    }
+
+    // Unhandled — fall back to int so CodeGen doesn't get a null
+    std::cerr << "[sema] warning: unhandled expression type: "
+              << typeid(*expr).name() << " — defaulting to int\n";
+    expr->inferredType = &TYPE_INT;
 }

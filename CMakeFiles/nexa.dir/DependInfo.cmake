@@ -8,14 +8,12 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/home/kali/nexa/compiler/ir/CodeGen.cpp" "CMakeFiles/nexa.dir/compiler/ir/CodeGen.cpp.o" "gcc" "CMakeFiles/nexa.dir/compiler/ir/CodeGen.cpp.o.d"
-  "/home/kali/nexa/compiler/lexer/Lexer.cpp" "CMakeFiles/nexa.dir/compiler/lexer/Lexer.cpp.o" "gcc" "CMakeFiles/nexa.dir/compiler/lexer/Lexer.cpp.o.d"
-  "/home/kali/nexa/compiler/main.cpp" "CMakeFiles/nexa.dir/compiler/main.cpp.o" "gcc" "CMakeFiles/nexa.dir/compiler/main.cpp.o.d"
-  "/home/kali/nexa/compiler/parser/Parser.cpp" "CMakeFiles/nexa.dir/compiler/parser/Parser.cpp.o" "gcc" "CMakeFiles/nexa.dir/compiler/parser/Parser.cpp.o.d"
-  "/home/kali/nexa/compiler/sema/SemanticAnalyzer.cpp" "CMakeFiles/nexa.dir/compiler/sema/SemanticAnalyzer.cpp.o" "gcc" "CMakeFiles/nexa.dir/compiler/sema/SemanticAnalyzer.cpp.o.d"
-  "/home/kali/nexa/runtime/ai/Tensor.cpp" "CMakeFiles/nexa.dir/runtime/ai/Tensor.cpp.o" "gcc" "CMakeFiles/nexa.dir/runtime/ai/Tensor.cpp.o.d"
-  "/home/kali/nexa/runtime/ai/ai_runtime.cpp" "CMakeFiles/nexa.dir/runtime/ai/ai_runtime.cpp.o" "gcc" "CMakeFiles/nexa.dir/runtime/ai/ai_runtime.cpp.o.d"
-  "" "nexa" "gcc" "CMakeFiles/nexa.dir/link.d"
+  "/mnt/c/Users/Omkar Mishra/nexa/compiler/ir/CodeGen.cpp" "CMakeFiles/nexa.dir/compiler/ir/CodeGen.cpp.o" "gcc" "CMakeFiles/nexa.dir/compiler/ir/CodeGen.cpp.o.d"
+  "/mnt/c/Users/Omkar Mishra/nexa/compiler/lexer/Lexer.cpp" "CMakeFiles/nexa.dir/compiler/lexer/Lexer.cpp.o" "gcc" "CMakeFiles/nexa.dir/compiler/lexer/Lexer.cpp.o.d"
+  "/mnt/c/Users/Omkar Mishra/nexa/compiler/main.cpp" "CMakeFiles/nexa.dir/compiler/main.cpp.o" "gcc" "CMakeFiles/nexa.dir/compiler/main.cpp.o.d"
+  "/mnt/c/Users/Omkar Mishra/nexa/compiler/parser/Parser.cpp" "CMakeFiles/nexa.dir/compiler/parser/Parser.cpp.o" "gcc" "CMakeFiles/nexa.dir/compiler/parser/Parser.cpp.o.d"
+  "/mnt/c/Users/Omkar Mishra/nexa/compiler/sema/SemanticAnalyzer.cpp" "CMakeFiles/nexa.dir/compiler/sema/SemanticAnalyzer.cpp.o" "gcc" "CMakeFiles/nexa.dir/compiler/sema/SemanticAnalyzer.cpp.o.d"
+  "/mnt/c/Users/Omkar Mishra/nexa/compiler/sema/Type.cpp" "CMakeFiles/nexa.dir/compiler/sema/Type.cpp.o" "gcc" "CMakeFiles/nexa.dir/compiler/sema/Type.cpp.o.d"
   )
 
 # Targets to which this target links which contain Fortran sources.

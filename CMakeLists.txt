@@ -8,7 +8,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # LLVM
 # -----------------------------
 find_package(LLVM REQUIRED CONFIG)
-
 message(STATUS "Using LLVM ${LLVM_PACKAGE_VERSION}")
 message(STATUS "LLVM dir: ${LLVM_DIR}")
 
@@ -16,16 +15,32 @@ include_directories(${LLVM_INCLUDE_DIRS})
 add_definitions(${LLVM_DEFINITIONS})
 
 # -----------------------------
-# Source files
+# AI Runtime — static library
+# Compiled separately so main.cpp can pass it to clang++ at link time
+# -----------------------------
+add_library(nexa_runtime STATIC
+    runtime/ai/Tensor.cpp
+)
+target_include_directories(nexa_runtime PRIVATE runtime/ai)
+
+# Copy the .a next to the nexa binary after every build
+add_custom_command(TARGET nexa_runtime POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy
+        $<TARGET_FILE:nexa_runtime>
+        ${CMAKE_BINARY_DIR}/nexa_runtime.a
+    COMMENT "Copying nexa_runtime.a → build dir"
+)
+
+# -----------------------------
+# Compiler executable
 # -----------------------------
 add_executable(nexa
     compiler/main.cpp
     compiler/lexer/Lexer.cpp
     compiler/parser/Parser.cpp
     compiler/sema/SemanticAnalyzer.cpp
+    compiler/sema/Type.cpp
     compiler/ir/CodeGen.cpp
-    runtime/ai/Tensor.cpp
-    runtime/ai/ai_runtime.cpp
 )
 
 # -----------------------------
@@ -49,7 +64,6 @@ llvm_map_components_to_libnames(LLVM_LIBS
     native
     irreader
 )
-
 target_link_libraries(nexa PRIVATE ${LLVM_LIBS})
 
 # -----------------------------

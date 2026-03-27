@@ -1,5 +1,4 @@
 file(REMOVE_RECURSE
-  "CMakeFiles/nexa.dir/link.d"
   "CMakeFiles/nexa.dir/compiler/ir/CodeGen.cpp.o"
   "CMakeFiles/nexa.dir/compiler/ir/CodeGen.cpp.o.d"
   "CMakeFiles/nexa.dir/compiler/lexer/Lexer.cpp.o"
@@ -10,10 +9,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/nexa.dir/compiler/parser/Parser.cpp.o.d"
   "CMakeFiles/nexa.dir/compiler/sema/SemanticAnalyzer.cpp.o"
   "CMakeFiles/nexa.dir/compiler/sema/SemanticAnalyzer.cpp.o.d"
-  "CMakeFiles/nexa.dir/runtime/ai/Tensor.cpp.o"
-  "CMakeFiles/nexa.dir/runtime/ai/Tensor.cpp.o.d"
-  "CMakeFiles/nexa.dir/runtime/ai/ai_runtime.cpp.o"
-  "CMakeFiles/nexa.dir/runtime/ai/ai_runtime.cpp.o.d"
+  "CMakeFiles/nexa.dir/compiler/sema/Type.cpp.o"
+  "CMakeFiles/nexa.dir/compiler/sema/Type.cpp.o.d"
   "nexa"
   "nexa.pdb"
 )

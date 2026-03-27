@@ -4,7 +4,6 @@
 #include "../ast/Ast.h"
 #include "../lexer/Token.h"
 #include "../sema/Type.h"
-
 #include <vector>
 #include <memory>
 
@@ -13,7 +12,6 @@ namespace nexa {
 class Parser {
 public:
     Parser(const std::vector<Token>& tokens);
-
     std::unique_ptr<Program> parseProgram();
 
 private:
@@ -25,12 +23,11 @@ private:
     // =============================
     Token peek();
     Token previous();
-    bool isAtEnd();
+    bool  isAtEnd();
     Token advance();
-    bool check(TokenKind kind);
-    bool match(TokenKind kind);
+    bool  check(TokenKind kind);
+    bool  match(TokenKind kind);
     Token consume(TokenKind kind);
-
 
     // =============================
     // Statements
@@ -41,29 +38,25 @@ private:
     std::unique_ptr<Stmt> parseAssignment();
     std::unique_ptr<Stmt> parsePrint();
     std::unique_ptr<Stmt> parseLoop();
-    // tensors
-    std::unique_ptr<Expr> parseTensorLiteral();
-
-
-    // NEW (for functions)
     std::unique_ptr<Stmt> parseFunction();
     std::unique_ptr<Stmt> parseReturn();
 
     // =============================
-    // Expressions (Pratt)
+    // Expressions
     // =============================
     std::unique_ptr<Expr> parseExpression(int precedence = 0);
     std::unique_ptr<Expr> parsePrimary();
     std::unique_ptr<Expr> parsePostfix(std::unique_ptr<Expr> expr);
-
+    std::unique_ptr<Expr> parseTensorLiteral();
     int getPrecedence(TokenKind kind);
 
     // =============================
     // Utilities
     // =============================
-    Type* parseType();
+    Type*       parseType();
+    const char* tokenKindName(TokenKind k);   // ← added
 };
 
-}
+} // namespace nexa
 
 #endif
