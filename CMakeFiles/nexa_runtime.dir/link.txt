@@ -1,2 +1,0 @@
-/usr/bin/ar qc libnexa_runtime.a CMakeFiles/nexa_runtime.dir/runtime/ai/Tensor.cpp.o
-/usr/bin/ranlib libnexa_runtime.a

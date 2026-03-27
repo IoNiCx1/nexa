@@ -232,3 +232,12 @@ Nexa aims to become a **modern high-performance programming language with built-
 # Status
 
 Nexa is currently in **active development**.
+
+
+in case of new pulls these lines are required:
+ rm -rf build
+rm -rf CMakeFiles
+rm -f CMakeCache.txt
+mkdir build
+cd build
+cmake ..
