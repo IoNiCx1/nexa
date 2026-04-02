@@ -135,6 +135,30 @@ struct FunctionDecl : public Stmt {
     FunctionDecl(const std::string& n, Type* ret) : name(n), returnType(ret) {}
 };
 
+struct StructDecl : public Stmt
+{
+    std::string name;
+
+    std::vector<std::pair<std::string, Type*>> fields;
+    StructDecl(const std::string& n) : name(n) {}
+};
+
+struct MemberAccessExpr : public Expr 
+{
+    std::unique_ptr<Expr> object;
+    std::string           field;
+    MemberAccessExpr(std::unique_ptr<Expr> obj, const std::string& f)
+        :object(std::move(obj)), field(f) {}
+};
+
+struct StructLiteralExpr : public Expr 
+{
+    std::string structName;
+
+    std::vector<std::pair<std::string, std::unique_ptr<Expr>>> fields;
+    StructLiteralExpr(const std::string& name) : structName(name) {}
+};
+
 struct Program {
     std::vector<std::unique_ptr<Stmt>> statements;
 };

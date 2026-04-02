@@ -73,6 +73,7 @@ Token Lexer::identifier() {
     if (lexeme == "true") return makeToken(TokenKind::True, lexeme);
     if (lexeme == "false") return makeToken(TokenKind::False, lexeme);
     if (lexeme == "bool") return makeToken(TokenKind::Bool, lexeme);
+    
 
     // NEW function keywords
     if (lexeme == "fn") return makeToken(TokenKind::Fn, lexeme);
@@ -83,6 +84,7 @@ Token Lexer::identifier() {
     // =============================
 
     if (lexeme == "tensor") return makeToken(TokenKind::Tensor, lexeme);
+    if (lexeme == "struct") return makeToken(TokenKind::Struct, lexeme);
 
     return makeToken(TokenKind::Identifier, lexeme);
 }
@@ -156,10 +158,23 @@ std::vector<Token> Lexer::tokenize() {
                 advance();
                 tokens.push_back(makeToken(TokenKind::Plus, "+"));
                 break;
+            
+            case '.':
+                advance();
+                tokens.push_back(makeToken(TokenKind::Dot, "."));
+                break;
 
             case '-':
                 advance();
-                tokens.push_back(makeToken(TokenKind::Minus, "-"));
+                if (peek() == '>')
+                {
+                    advance();
+                    tokens.push_back(makeToken(TokenKind::Arrow, "->"));
+                }
+                else
+                {
+                    tokens.push_back(makeToken(TokenKind::Minus, "-"));
+                }
                 break;
 
             case '*':
@@ -253,6 +268,11 @@ std::vector<Token> Lexer::tokenize() {
             case ';':
                 advance();
                 tokens.push_back(makeToken(TokenKind::Semicolon, ";"));
+                break;
+
+            case ':':
+                advance();
+                tokens.push_back(makeToken(TokenKind::Colon, ":"));
                 break;
 
             default:

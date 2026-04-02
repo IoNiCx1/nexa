@@ -42,6 +42,9 @@ enum class TokenKind {
     EqualEqual,
     NotEqual,
     Tensor,
+    Struct,
+    Dot,
+    Arrow,
 
     // Punctuation
     LeftParen,
@@ -52,6 +55,9 @@ enum class TokenKind {
     RightBracket,
     Comma,
     Semicolon,
+
+    // struct field initializers
+    Colon,
 
     END,
     Invalid

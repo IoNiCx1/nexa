@@ -68,6 +68,7 @@ std::unique_ptr<Program> Parser::parseProgram() {
 // =============================
 
 std::unique_ptr<Stmt> Parser::parseStatement() {
+    if (match(TokenKind::Struct)) return parseStructDecl();
     if (match(TokenKind::Fn))     return parseFunction();
     if (match(TokenKind::Return)) return parseReturn();
     if (match(TokenKind::If))     return parseIf();
@@ -76,7 +77,11 @@ std::unique_ptr<Stmt> Parser::parseStatement() {
 
     if (check(TokenKind::Int)    || check(TokenKind::Double) ||
         check(TokenKind::String) || check(TokenKind::Bool)   ||
-        check(TokenKind::Tensor))
+        check(TokenKind::Tensor) || check(TokenKind::Struct))
+        return parseVarDecl();
+
+    if (check(TokenKind::Identifier) && current + 1 < tokens.size() && 
+        tokens[current + 1].kind == TokenKind::Identifier)
         return parseVarDecl();
 
     // Expression statement — could be an assignment or a standalone call
@@ -90,6 +95,34 @@ std::unique_ptr<Stmt> Parser::parseStatement() {
 
     consume(TokenKind::Semicolon);
     return std::make_unique<PrintStmt>(std::move(expr));
+}
+
+// -- struct name { type field; ... } --
+std::unique_ptr<Stmt> Parser::parseStructDecl()
+{
+    if (!check(TokenKind::Identifier)) 
+    {
+        std::cerr << "[parser] error: expected struct name\n"; exit(1);
+    }
+    std::string name = advance().lexeme;
+    consume(TokenKind::LeftBrace);
+
+    auto decl = std::make_unique<StructDecl>(name);
+
+    while (!check(TokenKind::RightBrace) && !isAtEnd())
+    {
+        Type* fieldtype = parseType();
+        if (!check(TokenKind::Identifier))
+        {
+            std::cerr << "[parser] error: expected field name\n"; exit(1);
+        }
+        std::string fieldName = advance().lexeme;
+        consume(TokenKind::Semicolon);
+        decl->fields.push_back({fieldName, fieldtype});
+    }
+
+    consume(TokenKind::RightBrace);
+    return decl;
 }
 
 // ── fn name(type param, ...) -> type { body } ──
@@ -114,8 +147,7 @@ std::unique_ptr<Stmt> Parser::parseFunction() {
     }
 
     consume(TokenKind::RightParen);
-    consume(TokenKind::Minus);     // ->
-    consume(TokenKind::Greater);   // ->
+    consume(TokenKind::Arrow);
     Type* returnType = parseType();
     consume(TokenKind::LeftBrace);
 
@@ -214,16 +246,21 @@ Type* Parser::parseType() {
     else if (t.lexeme == "bool")   base = &TYPE_BOOL;
     else if (t.lexeme == "void")   base = &TYPE_VOID;
     else if (t.lexeme == "tensor") base = &TYPE_TENSOR;
+    else if (t.kind == TokenKind::Identifier) {
+
+        base = new Type(TypeKind::Struct, t.lexeme);
+    }
     else {
         std::cerr << "[parser] error: unknown type '" << t.lexeme << "'\n"; exit(1);
     }
 
-    // int[] etc.
-    if (match(TokenKind::LeftBracket)) {
+    if (match(TokenKind::LeftBracket))
+    {
         consume(TokenKind::RightBracket);
         return new Type(TypeKind::Array, base);
     }
     return base;
+
 }
 
 // =============================
@@ -254,6 +291,17 @@ std::unique_ptr<Expr> Parser::parseExpression(int precedence) {
         auto index = parseExpression();
         consume(TokenKind::RightBracket);
         left = std::make_unique<IndexExpr>(std::move(left), std::move(index));
+    }
+
+    //Postfix: member access obj.field
+    while (match(TokenKind::Dot))
+    {
+        if (!check(TokenKind::Identifier))
+        {
+            std::cerr << "parser error:  expected field name after '.'\n"; exit(1);
+        }
+        std::string field = advance().lexeme;
+        left = std::make_unique<MemberAccessExpr>(std::move(left), field);
     }
 
     // Infix binary operators
@@ -292,6 +340,27 @@ std::unique_ptr<Expr> Parser::parsePrimary() {
     // ── Identifier: variable OR function call ──
     // FIX: check for '(' after the name to decide which it is
     if (t.kind == TokenKind::Identifier) {
+        // Struct literal:Name { field: expr, ... }
+        if (check(TokenKind::LeftBrace))
+        {
+            advance();
+            auto lit = std::make_unique<StructLiteralExpr>(t.lexeme);
+            while (!check(TokenKind::RightBrace) && !isAtEnd())
+            {
+                if (!check(TokenKind::Identifier))
+                {
+                    std::cerr << "[parser] error: expected field name\n"; exit(1);
+                }
+                std::string fieldName = advance().lexeme;
+                consume(TokenKind::Colon);
+                auto val = parseExpression();
+                lit->fields.push_back({fieldName, std::move(val)});
+                if (!match(TokenKind::Comma)) break;
+            }
+            consume(TokenKind::RightBrace);
+            return lit;
+        }
+
         if (match(TokenKind::LeftParen)) {
             // Function call: name(arg, arg, ...)
             std::vector<std::unique_ptr<Expr>> args;

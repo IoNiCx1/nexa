@@ -1,0 +1,8 @@
+/mnt/c/Users/Ansh Singh/nexa/CMakeFiles/intrinsics_gen.dir
+/mnt/c/Users/Ansh Singh/nexa/CMakeFiles/omp_gen.dir
+/mnt/c/Users/Ansh Singh/nexa/CMakeFiles/acc_gen.dir
+/mnt/c/Users/Ansh Singh/nexa/CMakeFiles/RISCVTargetParserTableGen.dir
+/mnt/c/Users/Ansh Singh/nexa/CMakeFiles/nexa_runtime.dir
+/mnt/c/Users/Ansh Singh/nexa/CMakeFiles/nexa.dir
+/mnt/c/Users/Ansh Singh/nexa/CMakeFiles/edit_cache.dir
+/mnt/c/Users/Ansh Singh/nexa/CMakeFiles/rebuild_cache.dir

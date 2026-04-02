@@ -9,6 +9,8 @@ using namespace nexa;
 // static storage duration ensures it outlives every use.
 static nexa::Type TYPE_INT_ARRAY(nexa::TypeKind::Array, &nexa::TYPE_INT);
 
+std::map<std::string, Type*> structTypeCache;
+
 // ─────────────────────────────────────────────
 // Top-level entry
 // ─────────────────────────────────────────────
@@ -31,6 +33,12 @@ void SemanticAnalyzer::checkStmt(Stmt* stmt) {
     if (auto varDecl = dynamic_cast<VarDeclStmt*>(stmt)) {
         if (varDecl->initializer)
             checkExpr(varDecl->initializer.get());
+
+        Type* declType = varDecl->declaredType;
+        if (declType && declType->isStruct() && varDecl->initializer 
+            && varDecl->initializer->inferredType)
+            declType = varDecl->initializer->inferredType;
+
         declare(varDecl->name, varDecl->declaredType);
         return;
     }
@@ -107,6 +115,16 @@ void SemanticAnalyzer::checkStmt(Stmt* stmt) {
     if (auto ret = dynamic_cast<ReturnStmt*>(stmt)) {
         if (ret->value)
             checkExpr(ret->value.get());
+        return;
+    }
+
+    //---- Struct declaration -----------------------
+    if (auto sd = dynamic_cast<StructDecl*>(stmt)) {
+        structRegistry[sd->name] = sd->fields;
+
+        if (structTypeCache.find(sd->name) == structTypeCache.end()) {
+            structTypeCache[sd->name] = new Type(TypeKind::Struct, sd->name);
+        }
         return;
     }
 
@@ -220,6 +238,53 @@ void SemanticAnalyzer::checkExpr(Expr* expr) {
         // Look up the function's return type from the symbol table
         Type* retType = lookup(call->callee);
         expr->inferredType = retType ? retType : &TYPE_INT;
+        return;
+    }
+
+    //------ Struct Literal -----------------------
+    if (auto s1 = dynamic_cast<StructLiteralExpr*>(expr)) {
+        for (auto& f : s1->fields)
+            checkExpr(f.second.get());
+        
+        if(structTypeCache.count(s1->structName)) {
+            expr->inferredType = structTypeCache[s1->structName];
+        }
+        else {
+            Type* newT = new Type(TypeKind::Struct, s1 ->structName);
+            structTypeCache[s1->structName] = newT;
+            expr->inferredType = newT;
+        }
+        return;
+    }
+
+    //---------- Member access -----------------------------
+    if(auto ma = dynamic_cast<MemberAccessExpr*>(expr)) {
+        checkExpr(ma->object.get());
+        Type* objType = ma->object->inferredType;
+
+        if (!objType || !objType->isStruct()) {
+            std::cerr << "[sema] error: member access on non-struct type\n";
+            expr->inferredType = &TYPE_INT;
+            return;
+        }
+
+        auto it = structRegistry.find(objType->structName);
+        if (it == structRegistry.end()) {
+            std::cerr << "[sema] error: unknown struct '" << objType->structName << "'\n";
+            expr->inferredType = &TYPE_INT;
+            return;
+        }
+
+        for (auto& [fieldName, fieldType] : it->second) {
+            if (fieldName == ma->field) {
+                expr->inferredType = fieldType ? fieldType : &TYPE_INT;
+                return;
+            }
+        }
+
+        std::cerr << "[sema] error:  unknown field '" << ma->field
+                  << "' in struct '" << objType->structName << "'\n";
+        expr->inferredType = &TYPE_INT;
         return;
     }
 

@@ -203,6 +203,12 @@ void CodeGen::generateStmt(Stmt* stmt)
     // ── Variable Declaration ──────────────────────────────────
     if (auto var = dynamic_cast<VarDeclStmt*>(stmt)) {
         auto initVal = generateExpr(var->initializer.get());
+
+        if (var->declaredType && var->declaredType->isStruct()) {
+            namedValues[var->name] = initVal;
+            return;
+        }
+
         if (!initVal) {
             std::cerr << "[CodeGen] ERROR: initializer for '" << var->name << "' produced null\n";
             return;
@@ -357,6 +363,23 @@ void CodeGen::generateStmt(Stmt* stmt)
         return;
     }
 
+    // --- Struct Declaration ------------------------------
+    if (auto sd = dynamic_cast<StructDecl*>(stmt)) 
+    {
+        std::vector<llvm::Type*> fieldTypes;
+        std::vector<std::pair<std::string, int>> fieldIndex;
+
+        for (int i = 0; i < (int)sd->fields.size(); i++) {
+            fieldTypes.push_back(getLLVMType(sd->fields[i].second));
+            fieldIndex.push_back({sd->fields[i].first, i});
+        }
+
+        auto* st = llvm::StructType::create(context, fieldTypes, sd->name);
+        structTypes[sd->name]  = st;
+        structFields[sd->name] = fieldIndex;
+        return;
+    }
+
     std::cerr << "[CodeGen] WARNING: unhandled statement type: " << typeid(*stmt).name() << "\n";
 }
 
@@ -390,6 +413,7 @@ llvm::Value* CodeGen::generateExpr(Expr* expr)
         auto arr = generateExpr(idxExpr->array.get());
         auto idx = generateExpr(idxExpr->index.get());
         if (!arr || !idx) return nullptr;
+
 
         // arr must be a pointer for GEP. If the array variable was loaded
         // as an integer (type mismatch), inttoptr it so we get valid IR.
@@ -494,6 +518,10 @@ llvm::Value* CodeGen::generateExpr(Expr* expr)
             return nullptr;
         }
 
+        if (var->inferredType && var->inferredType->isStruct()) {
+            return it->second;
+        }
+
         // Arrays and strings are stored as ptr-to-ptr (alloca ptr).
         // Loading them must yield a ptr, not i32.
         // Use the alloca's allocated type to decide the load type so we
@@ -525,6 +553,64 @@ llvm::Value* CodeGen::generateExpr(Expr* expr)
         return builder.CreateCall(fn, args, "calltmp");
     }
 
-    std::cerr << "[CodeGen] ERROR: unhandled expression type: " << typeid(*expr).name() << "\n";
+    // ── Struct Literal ────────────────────────────────────────
+    if (auto sl = dynamic_cast<StructLiteralExpr*>(expr)) {
+        auto it = structTypes.find(sl->structName);
+        if (it == structTypes.end()) {
+            std::cerr << "[CodeGen] ERROR: unknown struct '" << sl->structName << "'\n";
+            return nullptr;
+        }
+        auto* st     = it->second;
+        auto* alloca = builder.CreateAlloca(st, nullptr, sl->structName + "_tmp");
+
+        auto& fieldIdx = structFields[sl->structName];
+
+        for (auto& f : sl->fields) {
+            int idx = -1;
+            for (auto& fi : fieldIdx)
+                if (fi.first == f.first) { idx = fi.second; break; }
+            if (idx == -1) {
+                std::cerr << "[CodeGen] ERROR: unknown field '" << f.first << "'\n";
+                continue;
+            }
+            auto val = generateExpr(f.second.get());
+            if (!val) continue;
+            auto ptr = builder.CreateStructGEP(st, alloca, idx, f.first + "_ptr");
+            builder.CreateStore(val, ptr);
+        }
+        return alloca;
+    }
+
+    // ── Member Access ─────────────────────────────────────────
+    if (auto ma = dynamic_cast<MemberAccessExpr*>(expr)) {
+        auto obj = generateExpr(ma->object.get());
+        if (!obj) return nullptr;
+
+        std::string structName;
+        if (ma->object->inferredType)
+            structName = ma->object->inferredType->structName;
+
+        auto sit = structTypes.find(structName);
+        if (sit == structTypes.end()) {
+            std::cerr << "[CodeGen] ERROR: cannot resolve struct type for member access\n";
+            return nullptr;
+        }
+
+        auto* st       = sit->second;
+        auto& fieldIdx = structFields[structName];
+
+        int idx = -1;
+        for (auto& fi : fieldIdx)
+            if (fi.first == ma->field) { idx = fi.second; break; }
+        if (idx == -1) {
+            std::cerr << "[CodeGen] ERROR: unknown field '" << ma->field << "'\n";
+            return nullptr;
+        }
+
+        auto ptr = builder.CreateStructGEP(st, obj, idx, ma->field + "_ptr");
+        return builder.CreateLoad(st->getElementType(idx), ptr, ma->field);
+    }
+
+    std::cerr<<"[CodeGen] ERROR: unhandled expression type: "<< typeid(*expr).name() << "\n";
     return nullptr;
 }

@@ -40,6 +40,7 @@ private:
     std::unique_ptr<Stmt> parseLoop();
     std::unique_ptr<Stmt> parseFunction();
     std::unique_ptr<Stmt> parseReturn();
+    std::unique_ptr<Stmt> parseStructDecl();
 
     // =============================
     // Expressions

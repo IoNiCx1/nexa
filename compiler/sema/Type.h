@@ -12,15 +12,18 @@ enum class TypeKind {
     Bool,
     Array,
     Void,
-    Tensor
+    Tensor,
+    Struct
 };
 
 struct Type {
     TypeKind kind;
     Type*    elementType = nullptr;
+    std::string structName;
 
-    Type(TypeKind k)              : kind(k), elementType(nullptr) {}
-    Type(TypeKind k, Type* elem)  : kind(k), elementType(elem)    {}
+    Type(TypeKind k)                        : kind(k), elementType(nullptr) {}
+    Type(TypeKind k, Type* elem)            : kind(k), elementType(elem)    {}
+    Type(TypeKind k, const std::string& sn) : kind(k), structName(sn) {}
 
     bool isInt()    const { return kind == TypeKind::Int;    }
     bool isDouble() const { return kind == TypeKind::Double; }
@@ -29,6 +32,7 @@ struct Type {
     bool isArray()  const { return kind == TypeKind::Array;  }
     bool isVoid()   const { return kind == TypeKind::Void;   }
     bool isTensor() const { return kind == TypeKind::Tensor; }
+    bool isStruct() const { return kind == TypeKind::Struct; }
 
     std::string toString() const {
         switch (kind) {
@@ -39,6 +43,7 @@ struct Type {
             case TypeKind::Array:  return (elementType ? elementType->toString() : "?") + "[]";
             case TypeKind::Void:   return "void";
             case TypeKind::Tensor: return "tensor";
+            case TypeKind::Struct: return structName;
         }
         return "unknown";
     }

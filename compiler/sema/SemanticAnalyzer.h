@@ -16,6 +16,7 @@ private:
     // Scope stack: each entry maps variable name → Type*
     // push on entering a block, pop on leaving
     std::vector<std::map<std::string, Type*>> symbolStack;
+    std::map<std::string, std::vector<std::pair<std::string, Type*>>> structRegistry;
 
     // ── Scope helpers ─────────────────────────
     void pushScope()  { symbolStack.push_back({}); }

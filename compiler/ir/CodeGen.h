@@ -58,6 +58,9 @@ llvm::Function* aiPrintTensorFunc;
     llvm::Value* generateExpr(Expr* expr);
     void generateStmt(Stmt* stmt);
 
+    std::map<std::string, llvm::StructType*> structTypes;
+    std::map<std::string, std::vector<std::pair<std::string, int>>> structFields;
+
 };
 
 }
