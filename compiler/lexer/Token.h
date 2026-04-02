@@ -45,6 +45,8 @@ enum class TokenKind {
     Struct,
     Dot,
     Arrow,
+    Constructor,
+    Self,
 
     // Punctuation
     LeftParen,

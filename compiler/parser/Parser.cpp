@@ -111,18 +111,54 @@ std::unique_ptr<Stmt> Parser::parseStructDecl()
 
     while (!check(TokenKind::RightBrace) && !isAtEnd())
     {
-        Type* fieldtype = parseType();
-        if (!check(TokenKind::Identifier))
-        {
-            std::cerr << "[parser] error: expected field name\n"; exit(1);
+        if (match(TokenKind::Constructor)) {
+            auto ctor = std::make_unique<ConstructorDecl>();
+            consume(TokenKind::LeftParen);
+            if (!check(TokenKind::RightParen)) {
+                do {
+                    Type* paramType = parseType();
+                    if (!check(TokenKind::Identifier)) {
+                        std::cerr << "[parser] error: expected parameter name\n"; exit(1);
+                    }
+                    std::string paramName = advance().lexeme;
+                    ctor->params.push_back({paramName, paramType});
+                } while (match(TokenKind::Comma));
+            }
+            consume(TokenKind::RightParen);
+            consume(TokenKind::LeftBrace);
+            while(!check(TokenKind::RightBrace) && !isAtEnd())
+                ctor->body.push_back(parseConstructorStmt());
+            consume(TokenKind::RightBrace);
+            decl->constructor = std::move(ctor);
         }
-        std::string fieldName = advance().lexeme;
-        consume(TokenKind::Semicolon);
-        decl->fields.push_back({fieldName, fieldtype});
+        else {
+            Type* fieldType = parseType();
+            if (!check(TokenKind::Identifier)) {
+                std::cerr << "[parser] error: expected field name\n"; exit(1);
+            }
+            std::string fieldName = advance().lexeme;
+            consume(TokenKind::Semicolon);
+            decl->fields.push_back({fieldName, fieldType});
+        }
     }
 
     consume(TokenKind::RightBrace);
     return decl;
+}
+
+std::unique_ptr<Stmt> Parser::parseConstructorStmt() {
+    if (match(TokenKind::Self)) {
+        consume(TokenKind::Dot);
+        if (!check(TokenKind::Identifier)) {
+            std::cerr << "[parser] error: expected field name after 'self.'\n"; exit(1);
+        }
+        std::string field = advance().lexeme;
+        consume(TokenKind::Assign);
+        auto val = parseExpression();
+        consume(TokenKind::Semicolon);
+        return std::make_unique<SelfAssignmentStmt>(field, std::move(val));
+    }
+    return parseStatement();
 }
 
 // ── fn name(type param, ...) -> type { body } ──
@@ -340,8 +376,22 @@ std::unique_ptr<Expr> Parser::parsePrimary() {
     // ── Identifier: variable OR function call ──
     // FIX: check for '(' after the name to decide which it is
     if (t.kind == TokenKind::Identifier) {
+
+        //Constructor call: Name(args) where name is a known struct
+        if (check(TokenKind::LeftParen) && isupper(t.lexeme[0])) {
+            advance();
+            std::vector<std::unique_ptr<Expr>> args;
+            if(!check(TokenKind::RightParen)) {
+                do {
+                    args.push_back(parseExpression());
+                } while (match(TokenKind::Comma));
+            }
+            consume(TokenKind::RightParen);
+            return std::make_unique<ConstructorCallExpr>(t.lexeme, std::move(args));
+        }
+
         // Struct literal:Name { field: expr, ... }
-        if (check(TokenKind::LeftBrace))
+        if (check(TokenKind::LeftBrace) && isupper(t.lexeme[0]))
         {
             advance();
             auto lit = std::make_unique<StructLiteralExpr>(t.lexeme);

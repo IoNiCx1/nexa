@@ -125,6 +125,17 @@ void SemanticAnalyzer::checkStmt(Stmt* stmt) {
         if (structTypeCache.find(sd->name) == structTypeCache.end()) {
             structTypeCache[sd->name] = new Type(TypeKind::Struct, sd->name);
         }
+
+        if(sd->constructor) {
+            for (auto& s :sd->constructor->body)
+                ;
+        }
+        return;
+    }
+
+    //------- Self Assignment --------------------
+    if (auto sa = dynamic_cast<SelfAssignmentStmt*>(stmt)) {
+        checkExpr(sa->value.get());
         return;
     }
 
@@ -156,6 +167,12 @@ void SemanticAnalyzer::checkExpr(Expr* expr) {
     }
     if (dynamic_cast<BoolLiteral*>(expr)) {
         expr->inferredType = &TYPE_BOOL;
+        return;
+    }
+    if (auto cc = dynamic_cast<ConstructorCallExpr*>(expr)) {
+        for (auto& arg : cc->arguments)
+            checkExpr(arg.get());
+        expr->inferredType = new Type(TypeKind::Struct, cc->structName);
         return;
     }
 

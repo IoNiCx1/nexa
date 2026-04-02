@@ -135,12 +135,35 @@ struct FunctionDecl : public Stmt {
     FunctionDecl(const std::string& n, Type* ret) : name(n), returnType(ret) {}
 };
 
+struct ConstructorDecl {
+    std::vector<std::pair<std::string, Type*>> params;
+    std::vector<std::unique_ptr<Stmt>> body;
+};
+
 struct StructDecl : public Stmt
 {
     std::string name;
-
     std::vector<std::pair<std::string, Type*>> fields;
+    std::unique_ptr<ConstructorDecl>  constructor;
     StructDecl(const std::string& n) : name(n) {}
+};
+
+struct SelfExpr : public Expr {
+    SelfExpr() {}
+};
+
+struct SelfAssignmentStmt : public Stmt {
+    std::string field;
+    std::unique_ptr<Expr> value;
+    SelfAssignmentStmt(const std:: string& f, std::unique_ptr<Expr> v)
+        : field(f), value(std::move(v)) {}
+};
+
+struct ConstructorCallExpr : public Expr {
+    std::string structName;
+    std::vector<std::unique_ptr<Expr>> arguments;
+    ConstructorCallExpr(const std::string& name, std::vector<std::unique_ptr<Expr>> args)
+        : structName(name), arguments(std::move(args)) {}
 };
 
 struct MemberAccessExpr : public Expr 

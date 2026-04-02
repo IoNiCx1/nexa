@@ -85,6 +85,8 @@ Token Lexer::identifier() {
 
     if (lexeme == "tensor") return makeToken(TokenKind::Tensor, lexeme);
     if (lexeme == "struct") return makeToken(TokenKind::Struct, lexeme);
+    if (lexeme == "constructor") return makeToken(TokenKind::Constructor, lexeme);
+    if (lexeme == "self") return makeToken(TokenKind::Self, lexeme);
 
     return makeToken(TokenKind::Identifier, lexeme);
 }

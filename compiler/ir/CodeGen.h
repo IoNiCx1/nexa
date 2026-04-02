@@ -45,11 +45,15 @@ private:
     llvm::Function* printfFunc;
     llvm::Function* mallocFunc;
     llvm::Function* sprintfFunc;
+    
     // ai functions 
     llvm::Function* aiMatrixFunc;
-llvm::Function* aiMatmulFunc;
-llvm::Function* aiPrintTensorFunc;
+    llvm::Function* aiMatmulFunc;
+    llvm::Function* aiPrintTensorFunc;
 
+    //Constructor
+    llvm::Value* currentSelfPtr = nullptr;
+    std::string currentStructName;
 
     // Type conversion
     llvm::Type* getLLVMType(Type* type);

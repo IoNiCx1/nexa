@@ -377,6 +377,72 @@ void CodeGen::generateStmt(Stmt* stmt)
         auto* st = llvm::StructType::create(context, fieldTypes, sd->name);
         structTypes[sd->name]  = st;
         structFields[sd->name] = fieldIndex;
+
+        if (sd->constructor) {
+            std::vector<llvm::Type*> paramTypes;
+            paramTypes.push_back(llvm::PointerType::get(context, 0));
+            for (auto& p : sd->constructor->params)
+                paramTypes.push_back(getLLVMType(p.second));
+
+            auto* ctorType = llvm::FunctionType::get(
+                llvm::Type::getVoidTy(context), paramTypes, false);
+            auto* ctorFunc = llvm::Function::Create(
+                ctorType, llvm::Function::ExternalLinkage,
+                sd->name + "__ctor", module.get());
+
+            auto* block = llvm::BasicBlock::Create(context, "entry", ctorFunc);
+            auto* oldInsert = builder.GetInsertBlock();
+            builder.SetInsertPoint(block);
+
+            auto oldValues = namedValues;
+            namedValues.clear();
+
+            //First arg is self pointer
+            auto argIt = ctorFunc->arg_begin();
+            llvm::Value* selfPtr = &*argIt++;
+            selfPtr->setName("self");
+
+            //Bind parameters
+            int idx = 0;
+            for (; argIt != ctorFunc->arg_end(); ++argIt, ++idx) {
+                auto& paramName = sd->constructor->params[idx].first;
+                auto* alloca = builder.CreateAlloca(argIt->getType(), nullptr, paramName);
+                builder.CreateStore(&*argIt, alloca);
+                namedValues[paramName] = alloca;
+            }
+
+            //Generate constructor body
+            currentSelfPtr = selfPtr;
+            currentStructName = sd->name;
+            for (auto& s : sd->constructor->body)
+                generateStmt(s.get());
+            currentSelfPtr = nullptr;
+            currentStructName = "";
+
+            builder.CreateRetVoid();
+            namedValues = oldValues;
+            if (oldInsert) builder.SetInsertPoint(oldInsert);
+        }
+        return;
+    }
+
+    //------- SelfAssignStmt ----------------------
+    if (auto sa =dynamic_cast<SelfAssignmentStmt*>(stmt)) {
+        auto* st = structTypes[currentStructName];
+        auto& field = structFields[currentStructName];
+
+        int idx = -1;
+        for (auto& fi : field)
+            if (fi.first == sa->field) { idx = fi.second; break; }
+        if (idx == -1) {
+            std::cerr << "[CodeGen] ERROR: unknown field '" << sa->field << "'\n";
+            return;
+        }
+
+        auto val = generateExpr(sa->value.get());
+        if (!val) return;
+        auto ptr = builder.CreateStructGEP(st, currentSelfPtr, idx, sa->field + "_ptr");
+        builder.CreateStore(val, ptr);
         return;
     }
 
@@ -609,6 +675,32 @@ llvm::Value* CodeGen::generateExpr(Expr* expr)
 
         auto ptr = builder.CreateStructGEP(st, obj, idx, ma->field + "_ptr");
         return builder.CreateLoad(st->getElementType(idx), ptr, ma->field);
+    }
+
+    //----- Constructor Call Expression ----------------------
+    if (auto cc = dynamic_cast<ConstructorCallExpr*>(expr)) {
+        auto* st = structTypes[cc->structName];
+        if (!st) {
+            std::cerr << "[Codegen] ERROR: unkown struct '" << cc->structName << "'\n";
+            return nullptr;
+        }
+
+        //Allocate struct on stack
+        auto* alloca = builder.CreateAlloca(st, nullptr, cc->structName + "_inst");
+
+        //Call constructor function if it exists
+        auto* ctorFunc = module->getFunction(cc->structName + "__ctor");
+        if (ctorFunc) {
+            std::vector<llvm::Value*> args;
+            args.push_back(alloca);
+            for (auto& arg :cc->arguments) {
+                auto val =generateExpr(arg.get());
+                if (!val) return nullptr;
+                args.push_back(val);
+            }
+            builder.CreateCall(ctorFunc, args);
+        }
+        return alloca;
     }
 
     std::cerr<<"[CodeGen] ERROR: unhandled expression type: "<< typeid(*expr).name() << "\n";

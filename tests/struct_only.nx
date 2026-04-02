@@ -1,6 +1,11 @@
 struct Point {
     int x;
     int y;
+
+    constructor(int x, int y) {
+        self.x = x;
+        self.y = y;
+    }
 }
 
 Point p = Point { x: 10, y: 20 };
