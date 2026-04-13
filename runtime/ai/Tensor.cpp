@@ -1,6 +1,8 @@
 #include "Tensor.h"
 #include <iostream>
 #include <vector>
+#include <algorithm>
+#include <numeric>
 
 namespace nexa {
 
@@ -48,6 +50,57 @@ extern "C" {
         nexa::Tensor* t = static_cast<nexa::Tensor*>(ptr);
         int cols = t->shape[1];
         t->data[r * cols + c] = val;
+    }
+
+    void* ai_zeros(int rows, int cols) {
+        std::vector<float> data(rows* cols, 0.0f);
+        return static_cast<void*>(new nexa::Tensor(data, {rows, cols}));
+    }
+
+    float ai_sum(void* ptr) {
+        nexa::Tensor* t = static_cast<nexa::Tensor*>(ptr);
+        return std::accumulate(t->data.begin(), t->data.end(), 0.0f);
+    }
+
+    float ai_mean(void* ptr) {
+        nexa::Tensor* t = static_cast<nexa::Tensor*>(ptr);
+        if (t->data.empty()) return 0.0f;
+        return ai_sum(ptr) / t->data.size();
+    }
+
+    float ai_max(void* ptr) {
+        nexa::Tensor* t = static_cast<nexa::Tensor*>(ptr);
+        if (t->data.empty()) return 0.0f;
+        return *std::max_element(t->data.begin(), t->data.end());
+    }
+
+    float ai_min(void* ptr) {
+        nexa::Tensor* t = static_cast<nexa::Tensor*>(ptr);
+        if (t->data.empty()) return 0.0f;
+        return *std::min_element(t->data.begin(), t->data.end());
+    }
+
+    void* ai_reshape(void* ptr, int r, int c) {
+        nexa::Tensor* t = static_cast<nexa::Tensor*>(ptr);
+        if (r*c != (int)t->data.size()) {
+            std::cerr << "[Runtime] ERROR: Reshape dimensions " << r << "x" << c
+                    << "do not match total elements " << t->data.size() << "\n";
+            return ptr;
+        }
+        return static_cast<void*>(new nexa::Tensor(t->data, {r, c}));
+    }
+
+    void* ai_shape(void* ptr) {
+        nexa::Tensor* t = static_cast<nexa::Tensor*>(ptr);
+        int rows = t->shape[0];
+        int cols = t->shape[1];
+
+        std::cout << "Shape: (" << rows << ", " << cols << ")" << std::endl;
+
+        int* shape_arr = new int[2];
+        shape_arr[0] = rows;
+        shape_arr[1] = cols;
+        return static_cast<void*>(shape_arr);
     }
 
     // Performs the matmul and returns a NEW Tensor object pointer
