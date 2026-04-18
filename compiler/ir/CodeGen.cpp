@@ -1,56 +1,35 @@
 #include "CodeGen.h"
-#include "LLVMContext.h"
-#include <llvm/IR/IRBuilder.h>
-#include <llvm/IR/Constants.h>
-#include <llvm/IR/Function.h>
-#include <llvm/IR/Verifier.h>
+
+#include <iostream>
+#include <fstream>
+
+#include <llvm/IR/Type.h>
 #include <llvm/IR/DerivedTypes.h>
-#include <stdexcept>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Verifier.h>
+#include <llvm/Support/raw_ostream.h>
 
-CodeGen::CodeGen(LLVMState& state) : llvm(state) {}
+using namespace nexa;
 
-void CodeGen::generate(Program& program) {
-    // 1. Create the 'main' function to return i32 (standard for exit codes)
-    llvm::FunctionType* funcType = llvm::FunctionType::get(llvm::Type::getInt32Ty(*llvm.context), false);
-    llvm::Function* mainFunc = llvm::Function::Create(
-        funcType, llvm::Function::ExternalLinkage, "main", llvm.module.get()
+// =============================
+// Constructor
+// =============================
+
+CodeGen::CodeGen()
+    : module(std::make_unique<llvm::Module>("nexa_module", context)),
+      builder(context)
+{
+    module->setTargetTriple("x86_64-pc-linux-gnu");
+
+    // printf
+    auto printfType = llvm::FunctionType::get(
+        llvm::Type::getInt32Ty(context),
+        { llvm::PointerType::get(context, 0) },
+        true
     );
-    
-    // 2. Create an 'entry' block
-    llvm::BasicBlock* entry = llvm::BasicBlock::Create(*llvm.context, "entry", mainFunc);
-    llvm.builder->SetInsertPoint(entry);
-    
-    // NEW: Declare printf function: int printf(char*, ...)
-    std::vector<llvm::Type*> printfArgs;
-    // FIX: Use PointerType::get for newer LLVM versions
-    printfArgs.push_back(llvm::PointerType::get(llvm::Type::getInt8Ty(*llvm.context), 0));
-    llvm::FunctionType* printfType = llvm::FunctionType::get(
-        llvm::Type::getInt32Ty(*llvm.context), 
-        printfArgs, 
-        true  // varargs
+    printfFunc = llvm::Function::Create(
+        printfType, llvm::Function::ExternalLinkage, "printf", module.get()
     );
-
-    llvm::FunctionCallee printfFunc = llvm.module->getOrInsertFunction("printf", printfType);
-    
-    // Default exit value if no variables are declared
-    llvm::Value* lastValue = llvm::ConstantInt::get(*llvm.context, llvm::APInt(32, 0));
-    
-    // 3. Loop through statements and generate code
-    for (auto& stmt : program.statements) {
-        // NEW: Handle print statements
-        if (auto* printStmt = dynamic_cast<PrintStmt*>(stmt.get())) {
-            genPrintStmt(*printStmt, printfFunc);
-        }
-        // Handle variable declarations
-        else if (auto* varDecl = dynamic_cast<VarDecl*>(stmt.get())) {
-            genVarDecl(*varDecl);
-            
-            // For testing: Capture the value of the last declared variable to return it
-            if (varDecl->initializer) {
-                lastValue = genExpression(*varDecl->initializer);
-            }
-        }
-=======
 
     // ai_create_matrix
     auto matrixType = llvm::FunctionType::get(
@@ -822,5 +801,12 @@ llvm::Value* CodeGen::generateExpr(Expr* expr)
                 if (!val) return nullptr;
                 args.push_back(val);
             }
+            builder.CreateCall(ctorFunc, args);
         }
+        return alloca;
+    }
+
+    std::cerr << "[CodeGen] ERROR: unhandled expression type: "
+              << typeid(*expr).name() << "\n";
+    return nullptr;
 }
