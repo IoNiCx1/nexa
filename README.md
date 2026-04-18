@@ -235,9 +235,4 @@ Nexa is currently in **active development**.
 
 
 in case of new pulls these lines are required:
- rm -rf build
-rm -rf CMakeFiles
-rm -f CMakeCache.txt
-mkdir build
-cd build
-cmake ..
+rm -rf build  && rm -rf CMakeFiles && rm -f CMakeCache.txt  && mkdir build  && cd build  && cmake ..
