@@ -822,12 +822,5 @@ llvm::Value* CodeGen::generateExpr(Expr* expr)
                 if (!val) return nullptr;
                 args.push_back(val);
             }
-            builder.CreateCall(ctorFunc, args);
         }
-        return alloca;
-    }
-
-    std::cerr << "[CodeGen] ERROR: unhandled expression type: "
-              << typeid(*expr).name() << "\n";
-    return nullptr;
 }
