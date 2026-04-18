@@ -1,6 +1,18 @@
-# Build directory
+# Build directories
 build/
 bin/
+
+# CMake generated files (CRITICAL)
+CMakeFiles/
+CMakeCache.txt
+Makefile
+cmake_install.cmake
+
+# Compiled objects
+*.o
+*.a
+*.so
+*.out
 
 # IDE files
 .vscode/
@@ -9,8 +21,3 @@ bin/
 # OS files
 .DS_Store
 *.swp
-
-# Compiled objects
-*.o
-*.a
-*.so

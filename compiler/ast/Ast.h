@@ -4,7 +4,7 @@
 #include <vector>
 #include <memory>
 #include <map>
-#include "../sema/Type.h" // Use the single source of truth
+#include "../sema/Type.h"
 
 namespace nexa {
 
@@ -79,6 +79,54 @@ struct CallExpr : public Expr {
         : callee(c), arguments(std::move(args)) {}
 };
 
+// ── Struct / OOP expressions ───────────────────
+
+struct SelfExpr : public Expr {
+    SelfExpr() {}
+};
+
+struct MemberAccessExpr : public Expr {
+    std::unique_ptr<Expr> object;
+    std::string           field;
+    MemberAccessExpr(std::unique_ptr<Expr> obj, const std::string& f)
+        : object(std::move(obj)), field(f) {}
+};
+
+struct ConstructorCallExpr : public Expr {
+    std::string structName;
+    std::vector<std::unique_ptr<Expr>> arguments;
+    ConstructorCallExpr(const std::string& name, std::vector<std::unique_ptr<Expr>> args)
+        : structName(name), arguments(std::move(args)) {}
+};
+
+struct StructLiteralExpr : public Expr {
+    std::string structName;
+    std::vector<std::pair<std::string, std::unique_ptr<Expr>>> fields;
+    StructLiteralExpr(const std::string& name) : structName(name) {}
+};
+
+// ── File handling expressions ──────────────────
+
+enum class FileMode {
+    Read,    // open.file("path")
+    Write,   // open.file("path", write, "content")
+    Append   // open.file("path", append, "content")
+};
+
+// open.file("path")                        → read  → returns string
+// open.file("path", write,  expr)          → write → returns void
+// open.file("path", append, expr)          → append→ returns void
+struct FileExpr : public Expr {
+    std::unique_ptr<Expr> path;       // string expression for the file path
+    FileMode              mode;
+    std::unique_ptr<Expr> content;    // only set for Write / Append
+    bool                  compileTime; // true when path is a string literal (embed at compile time)
+
+    FileExpr(std::unique_ptr<Expr> p, FileMode m,
+             std::unique_ptr<Expr> c, bool ct)
+        : path(std::move(p)), mode(m), content(std::move(c)), compileTime(ct) {}
+};
+
 // =============================
 // Statements
 // =============================
@@ -140,46 +188,34 @@ struct ConstructorDecl {
     std::vector<std::unique_ptr<Stmt>> body;
 };
 
-struct StructDecl : public Stmt
-{
+struct StructDecl : public Stmt {
     std::string name;
     std::vector<std::pair<std::string, Type*>> fields;
-    std::unique_ptr<ConstructorDecl>  constructor;
+    std::unique_ptr<ConstructorDecl> constructor;
     StructDecl(const std::string& n) : name(n) {}
-};
-
-struct SelfExpr : public Expr {
-    SelfExpr() {}
 };
 
 struct SelfAssignmentStmt : public Stmt {
     std::string field;
     std::unique_ptr<Expr> value;
-    SelfAssignmentStmt(const std:: string& f, std::unique_ptr<Expr> v)
+    SelfAssignmentStmt(const std::string& f, std::unique_ptr<Expr> v)
         : field(f), value(std::move(v)) {}
 };
 
-struct ConstructorCallExpr : public Expr {
-    std::string structName;
-    std::vector<std::unique_ptr<Expr>> arguments;
-    ConstructorCallExpr(const std::string& name, std::vector<std::unique_ptr<Expr>> args)
-        : structName(name), arguments(std::move(args)) {}
+// ── File handling statements ───────────────────
+
+// imp open.file()  — declares that this program uses the file module.
+// At compile time: no-op in IR (the runtime is linked automatically).
+// At parse time: sets a flag so open.file() calls are legal.
+struct ImpStmt : public Stmt {
+    std::string module;           // e.g. "open.file"
+    ImpStmt(const std::string& m) : module(m) {}
 };
 
-struct MemberAccessExpr : public Expr 
-{
-    std::unique_ptr<Expr> object;
-    std::string           field;
-    MemberAccessExpr(std::unique_ptr<Expr> obj, const std::string& f)
-        :object(std::move(obj)), field(f) {}
-};
-
-struct StructLiteralExpr : public Expr 
-{
-    std::string structName;
-
-    std::vector<std::pair<std::string, std::unique_ptr<Expr>>> fields;
-    StructLiteralExpr(const std::string& name) : structName(name) {}
+// Standalone open.file(...) used as a statement (write / append)
+struct FileStmt : public Stmt {
+    std::unique_ptr<FileExpr> expr;
+    FileStmt(std::unique_ptr<FileExpr> e) : expr(std::move(e)) {}
 };
 
 struct Program {

@@ -42,7 +42,15 @@ void SemanticAnalyzer::checkStmt(Stmt* stmt) {
         declare(varDecl->name, varDecl->declaredType);
         return;
     }
+    if (dynamic_cast<ImpStmt*>(stmt)) return;   // no type checking needed
 
+if (auto fs = dynamic_cast<FileStmt*>(stmt)) {
+    if (fs->expr) {
+        if (fs->expr->path) checkExpr(fs->expr->path.get());
+        if (fs->expr->content) checkExpr(fs->expr->content.get());
+    }
+    return;
+}
     // ── Print ─────────────────────────────────
     if (auto print = dynamic_cast<PrintStmt*>(stmt)) {
         checkExpr(print->expression.get());
@@ -304,6 +312,12 @@ void SemanticAnalyzer::checkExpr(Expr* expr) {
         expr->inferredType = &TYPE_INT;
         return;
     }
+    if (auto fe = dynamic_cast<FileExpr*>(expr)) {
+    if (fe->path)    checkExpr(fe->path.get());
+    if (fe->content) checkExpr(fe->content.get());
+    expr->inferredType = &TYPE_STRING;  // read returns string, write/append return void
+    return;
+}
 
     // Unhandled — fall back to int so CodeGen doesn't get a null
     std::cerr << "[sema] warning: unhandled expression type: "

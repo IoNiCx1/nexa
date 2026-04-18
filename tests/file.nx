@@ -1,0 +1,7 @@
+imp open.file();
+
+open.file("tests/output.txt", write, "Hello from Nexa!\n");
+open.file("tests/output.txt", append, "Second line\n");
+
+string data = open.file("tests/output.txt");
+print(data);

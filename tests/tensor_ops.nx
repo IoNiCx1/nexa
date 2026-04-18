@@ -1,21 +1,18 @@
-tensor t = zeros(3, 3);
-print(t);
+// tensor t = zeros(3, 3);
+// print(t);
 
-tensor t2 = ones(2, 2);
-print(t2);
+// tensor t2 = ones(2, 2);
+// print(t2);
 
 tensor a = [[1.0, 2.0], [3.0, 4.0]];
-double s = sum(a);
-double m = mean(a);
-double mx = max(a);
-double mn = min(a);
+// double s = sum(a);
+// double m = mean(a);
+// double mx = max(a);
+// double mn = min(a);
 
-print(s);
-print(m);
-print(mx);
-print(mn);
+// print(s);
+// print(m);
+// print(mx);
+print(a);
 
-tensor r = reshape(a, 1, 4);
-print(r);
 
-shape(a);

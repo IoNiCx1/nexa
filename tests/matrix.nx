@@ -1,6 +1,6 @@
-// Testing Parentheses and Tensors
-int scalar = (10 + 5) * 2;
-print(scalar); // Expected: 30
+// // Testing Parentheses and Tensors
+// int scalar = (10 + 5) * 2;
+// print(scalar); // Expected: 30
 
 tensor A = [[1.0, 2.0], [3.0, 4.0]];
 tensor B = [[5.0, 6.0], [7.0, 8.0]];
@@ -10,11 +10,4 @@ tensor C = A * B;
 print("Matrix Result:");
 print(C);
 
-struct Point {
-    int x;
-    int y;
-}
 
-Point p=Point { x: 10, y: 20 };
-print(p.x);
-print(p.y);

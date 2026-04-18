@@ -15,19 +15,26 @@ include_directories(${LLVM_INCLUDE_DIRS})
 add_definitions(${LLVM_DEFINITIONS})
 
 # -----------------------------
-# AI Runtime — static library
-# Compiled separately so main.cpp can pass it to clang++ at link time
+# AI + File Runtime — static library
+# Linked into every compiled .nx program at the clang++ step in main.cpp
 # -----------------------------
 add_library(nexa_runtime STATIC
     runtime/ai/Tensor.cpp
+    runtime/file/FileRuntime.cpp
 )
-target_include_directories(nexa_runtime PRIVATE runtime/ai)
+target_include_directories(nexa_runtime PRIVATE
+    runtime/ai
+    runtime/file
+)
 
-# Copy the .a next to the nexa binary after every build
+# Copy nexa_runtime.a next to the nexa binary after every build
 add_custom_command(TARGET nexa_runtime POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy
         $<TARGET_FILE:nexa_runtime>
         ${CMAKE_BINARY_DIR}/nexa_runtime.a
+    COMMAND ${CMAKE_COMMAND} -E copy          
+        $<TARGET_FILE:nexa_runtime>           
+        ${CMAKE_SOURCE_DIR}/nexa_runtime.a   
     COMMENT "Copying nexa_runtime.a → build dir"
 )
 
@@ -43,9 +50,6 @@ add_executable(nexa
     compiler/ir/CodeGen.cpp
 )
 
-# -----------------------------
-# Include directories
-# -----------------------------
 target_include_directories(nexa PRIVATE
     compiler
     compiler/lexer
@@ -66,9 +70,4 @@ llvm_map_components_to_libnames(LLVM_LIBS
 )
 target_link_libraries(nexa PRIVATE ${LLVM_LIBS})
 
-# -----------------------------
-# Properties
-# -----------------------------
-set_target_properties(nexa PROPERTIES
-    LINKER_LANGUAGE CXX
-)
+set_target_properties(nexa PROPERTIES LINKER_LANGUAGE CXX)

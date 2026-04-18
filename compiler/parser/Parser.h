@@ -18,9 +18,7 @@ private:
     const std::vector<Token>& tokens;
     size_t current = 0;
 
-    // =============================
-    // Core Helpers
-    // =============================
+    // ── Core helpers ──────────────────────────
     Token peek();
     Token previous();
     bool  isAtEnd();
@@ -29,9 +27,7 @@ private:
     bool  match(TokenKind kind);
     Token consume(TokenKind kind);
 
-    // =============================
-    // Statements
-    // =============================
+    // ── Statements ────────────────────────────
     std::unique_ptr<Stmt> parseStatement();
     std::unique_ptr<Stmt> parseIf();
     std::unique_ptr<Stmt> parseVarDecl();
@@ -43,20 +39,21 @@ private:
     std::unique_ptr<Stmt> parseStructDecl();
     std::unique_ptr<Stmt> parseConstructorStmt();
 
-    // =============================
-    // Expressions
-    // =============================
+    // ── File handling ─────────────────────────
+    std::unique_ptr<Stmt>     parseImp();
+    std::unique_ptr<Stmt>     parseFileStmt();
+    std::unique_ptr<FileExpr> parseFileExpr();
+
+    // ── Expressions ───────────────────────────
     std::unique_ptr<Expr> parseExpression(int precedence = 0);
     std::unique_ptr<Expr> parsePrimary();
     std::unique_ptr<Expr> parsePostfix(std::unique_ptr<Expr> expr);
     std::unique_ptr<Expr> parseTensorLiteral();
     int getPrecedence(TokenKind kind);
 
-    // =============================
-    // Utilities
-    // =============================
+    // ── Utilities ─────────────────────────────
     Type*       parseType();
-    const char* tokenKindName(TokenKind k);   // ← added
+    const char* tokenKindName(TokenKind k);
 };
 
 } // namespace nexa

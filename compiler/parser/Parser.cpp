@@ -34,7 +34,6 @@ Token Parser::consume(TokenKind kind) {
     exit(1);
 }
 
-// Human-readable name for a TokenKind — used in error messages only
 const char* Parser::tokenKindName(TokenKind k) {
     switch (k) {
         case TokenKind::LeftParen:    return "(";
@@ -48,6 +47,7 @@ const char* Parser::tokenKindName(TokenKind k) {
         case TokenKind::Assign:       return "=";
         case TokenKind::Minus:        return "-";
         case TokenKind::Greater:      return ">";
+        case TokenKind::Arrow:        return "->";
         default:                      return "<token>";
     }
 }
@@ -68,23 +68,26 @@ std::unique_ptr<Program> Parser::parseProgram() {
 // =============================
 
 std::unique_ptr<Stmt> Parser::parseStatement() {
-    if (match(TokenKind::Struct)) return parseStructDecl();
-    if (match(TokenKind::Fn))     return parseFunction();
-    if (match(TokenKind::Return)) return parseReturn();
-    if (match(TokenKind::If))     return parseIf();
-    if (match(TokenKind::Print))  return parsePrint();
-    if (match(TokenKind::Loop))   return parseLoop();
+    // ── File handling ──────────────────────────
+    if (match(TokenKind::Imp))          return parseImp();
+    if (check(TokenKind::OpenFile))     return parseFileStmt();
+
+    if (match(TokenKind::Struct))       return parseStructDecl();
+    if (match(TokenKind::Fn))           return parseFunction();
+    if (match(TokenKind::Return))       return parseReturn();
+    if (match(TokenKind::If))           return parseIf();
+    if (match(TokenKind::Print))        return parsePrint();
+    if (match(TokenKind::Loop))         return parseLoop();
 
     if (check(TokenKind::Int)    || check(TokenKind::Double) ||
         check(TokenKind::String) || check(TokenKind::Bool)   ||
         check(TokenKind::Tensor) || check(TokenKind::Struct))
         return parseVarDecl();
 
-    if (check(TokenKind::Identifier) && current + 1 < tokens.size() && 
+    if (check(TokenKind::Identifier) && current + 1 < tokens.size() &&
         tokens[current + 1].kind == TokenKind::Identifier)
         return parseVarDecl();
 
-    // Expression statement — could be an assignment or a standalone call
     auto expr = parseExpression();
 
     if (match(TokenKind::Assign)) {
@@ -97,11 +100,66 @@ std::unique_ptr<Stmt> Parser::parseStatement() {
     return std::make_unique<PrintStmt>(std::move(expr));
 }
 
-// -- struct name { type field; ... } --
-std::unique_ptr<Stmt> Parser::parseStructDecl()
-{
-    if (!check(TokenKind::Identifier)) 
-    {
+// ── imp open.file() ───────────────────────────
+std::unique_ptr<Stmt> Parser::parseImp() {
+    if (check(TokenKind::OpenFile)) {
+        advance();                      // consume open.file
+        consume(TokenKind::LeftParen);
+        consume(TokenKind::RightParen);
+        consume(TokenKind::Semicolon);
+        return std::make_unique<ImpStmt>("open.file");
+    }
+    std::cerr << "[parser] error: unknown module after 'imp': "
+              << peek().lexeme << "\n";
+    exit(1);
+}
+
+// ── open.file(...) as a statement (write/append) ──
+std::unique_ptr<Stmt> Parser::parseFileStmt() {
+    auto expr = parseFileExpr();
+    consume(TokenKind::Semicolon);
+    return std::make_unique<FileStmt>(std::move(expr));
+}
+
+// ── open.file(...) core parser ────────────────
+std::unique_ptr<FileExpr> Parser::parseFileExpr() {
+    consume(TokenKind::OpenFile);
+    consume(TokenKind::LeftParen);
+
+    auto path = parseExpression();
+    bool compileTime = dynamic_cast<StringLiteral*>(path.get()) != nullptr;
+
+    // open.file("path")  — read mode
+    if (match(TokenKind::RightParen)) {
+        return std::make_unique<FileExpr>(
+            std::move(path), FileMode::Read, nullptr, compileTime
+        );
+    }
+
+    // open.file("path", write/append, content)
+    consume(TokenKind::Comma);
+
+    FileMode mode;
+    if      (match(TokenKind::Write))  mode = FileMode::Write;
+    else if (match(TokenKind::Append)) mode = FileMode::Append;
+    else {
+        std::cerr << "[parser] error: expected 'write' or 'append' in open.file(), got '"
+                  << peek().lexeme << "'\n";
+        exit(1);
+    }
+
+    consume(TokenKind::Comma);
+    auto content = parseExpression();
+    consume(TokenKind::RightParen);
+
+    return std::make_unique<FileExpr>(
+        std::move(path), mode, std::move(content), compileTime
+    );
+}
+
+// ── struct name { type field; ... constructor(...){} } ──
+std::unique_ptr<Stmt> Parser::parseStructDecl() {
+    if (!check(TokenKind::Identifier)) {
         std::cerr << "[parser] error: expected struct name\n"; exit(1);
     }
     std::string name = advance().lexeme;
@@ -109,8 +167,7 @@ std::unique_ptr<Stmt> Parser::parseStructDecl()
 
     auto decl = std::make_unique<StructDecl>(name);
 
-    while (!check(TokenKind::RightBrace) && !isAtEnd())
-    {
+    while (!check(TokenKind::RightBrace) && !isAtEnd()) {
         if (match(TokenKind::Constructor)) {
             auto ctor = std::make_unique<ConstructorDecl>();
             consume(TokenKind::LeftParen);
@@ -126,12 +183,11 @@ std::unique_ptr<Stmt> Parser::parseStructDecl()
             }
             consume(TokenKind::RightParen);
             consume(TokenKind::LeftBrace);
-            while(!check(TokenKind::RightBrace) && !isAtEnd())
+            while (!check(TokenKind::RightBrace) && !isAtEnd())
                 ctor->body.push_back(parseConstructorStmt());
             consume(TokenKind::RightBrace);
             decl->constructor = std::move(ctor);
-        }
-        else {
+        } else {
             Type* fieldType = parseType();
             if (!check(TokenKind::Identifier)) {
                 std::cerr << "[parser] error: expected field name\n"; exit(1);
@@ -169,7 +225,6 @@ std::unique_ptr<Stmt> Parser::parseFunction() {
     std::string name = advance().lexeme;
 
     consume(TokenKind::LeftParen);
-
     std::vector<std::pair<std::string, Type*>> params;
     if (!check(TokenKind::RightParen)) {
         do {
@@ -199,7 +254,6 @@ std::unique_ptr<Stmt> Parser::parseFunction() {
 
 // ── return expr; ──
 std::unique_ptr<Stmt> Parser::parseReturn() {
-    // Allow bare `return;` for void functions
     if (check(TokenKind::Semicolon)) {
         advance();
         return std::make_unique<ReturnStmt>(nullptr);
@@ -282,21 +336,17 @@ Type* Parser::parseType() {
     else if (t.lexeme == "bool")   base = &TYPE_BOOL;
     else if (t.lexeme == "void")   base = &TYPE_VOID;
     else if (t.lexeme == "tensor") base = &TYPE_TENSOR;
-    else if (t.kind == TokenKind::Identifier) {
-
+    else if (t.kind == TokenKind::Identifier)
         base = new Type(TypeKind::Struct, t.lexeme);
-    }
     else {
         std::cerr << "[parser] error: unknown type '" << t.lexeme << "'\n"; exit(1);
     }
 
-    if (match(TokenKind::LeftBracket))
-    {
+    if (match(TokenKind::LeftBracket)) {
         consume(TokenKind::RightBracket);
         return new Type(TypeKind::Array, base);
     }
     return base;
-
 }
 
 // =============================
@@ -322,19 +372,17 @@ int Parser::getPrecedence(TokenKind kind) {
 std::unique_ptr<Expr> Parser::parseExpression(int precedence) {
     auto left = parsePrimary();
 
-    // Postfix: array indexing  arr[i]
+    // Postfix: array indexing arr[i]
     while (match(TokenKind::LeftBracket)) {
         auto index = parseExpression();
         consume(TokenKind::RightBracket);
         left = std::make_unique<IndexExpr>(std::move(left), std::move(index));
     }
 
-    //Postfix: member access obj.field
-    while (match(TokenKind::Dot))
-    {
-        if (!check(TokenKind::Identifier))
-        {
-            std::cerr << "parser error:  expected field name after '.'\n"; exit(1);
+    // Postfix: member access obj.field
+    while (match(TokenKind::Dot)) {
+        if (!check(TokenKind::Identifier)) {
+            std::cerr << "[parser] error: expected field name after '.'\n"; exit(1);
         }
         std::string field = advance().lexeme;
         left = std::make_unique<MemberAccessExpr>(std::move(left), field);
@@ -342,7 +390,7 @@ std::unique_ptr<Expr> Parser::parseExpression(int precedence) {
 
     // Infix binary operators
     while (!isAtEnd() && getPrecedence(peek().kind) > precedence) {
-        Token op  = advance();
+        Token op    = advance();
         int newPrec = getPrecedence(op.kind);
         auto right  = parseExpression(newPrec);
         left = std::make_unique<BinaryExpr>(std::move(left), op.lexeme, std::move(right));
@@ -373,15 +421,20 @@ std::unique_ptr<Expr> Parser::parsePrimary() {
     if (t.kind == TokenKind::False)
         return std::make_unique<BoolLiteral>(false);
 
-    // ── Identifier: variable OR function call ──
-    // FIX: check for '(' after the name to decide which it is
+    // ── open.file(...) as expression (read) ───
+    if (t.kind == TokenKind::OpenFile) {
+        current--;  // back up so parseFileExpr sees the token
+        return parseFileExpr();
+    }
+
+    // ── Identifier: variable, function call, struct ──
     if (t.kind == TokenKind::Identifier) {
 
-        //Constructor call: Name(args) where name is a known struct
+        // Constructor call: Name(args) where Name starts with uppercase
         if (check(TokenKind::LeftParen) && isupper(t.lexeme[0])) {
             advance();
             std::vector<std::unique_ptr<Expr>> args;
-            if(!check(TokenKind::RightParen)) {
+            if (!check(TokenKind::RightParen)) {
                 do {
                     args.push_back(parseExpression());
                 } while (match(TokenKind::Comma));
@@ -390,15 +443,12 @@ std::unique_ptr<Expr> Parser::parsePrimary() {
             return std::make_unique<ConstructorCallExpr>(t.lexeme, std::move(args));
         }
 
-        // Struct literal:Name { field: expr, ... }
-        if (check(TokenKind::LeftBrace) && isupper(t.lexeme[0]))
-        {
+        // Struct literal: Name { field: expr, ... }
+        if (check(TokenKind::LeftBrace) && isupper(t.lexeme[0])) {
             advance();
             auto lit = std::make_unique<StructLiteralExpr>(t.lexeme);
-            while (!check(TokenKind::RightBrace) && !isAtEnd())
-            {
-                if (!check(TokenKind::Identifier))
-                {
+            while (!check(TokenKind::RightBrace) && !isAtEnd()) {
+                if (!check(TokenKind::Identifier)) {
                     std::cerr << "[parser] error: expected field name\n"; exit(1);
                 }
                 std::string fieldName = advance().lexeme;
@@ -411,8 +461,8 @@ std::unique_ptr<Expr> Parser::parsePrimary() {
             return lit;
         }
 
+        // Function call: name(args)
         if (match(TokenKind::LeftParen)) {
-            // Function call: name(arg, arg, ...)
             std::vector<std::unique_ptr<Expr>> args;
             if (!check(TokenKind::RightParen)) {
                 do {
@@ -422,6 +472,7 @@ std::unique_ptr<Expr> Parser::parsePrimary() {
             consume(TokenKind::RightParen);
             return std::make_unique<CallExpr>(t.lexeme, std::move(args));
         }
+
         // Plain variable reference
         return std::make_unique<VariableExpr>(t.lexeme);
     }
@@ -435,7 +486,7 @@ std::unique_ptr<Expr> Parser::parsePrimary() {
 
     // ── Tensor literal: [[ ... ]] ─────────────
     if (t.kind == TokenKind::LeftBracket && check(TokenKind::LeftBracket)) {
-        current--;  // back up so parseTensorLiteral sees the outer [
+        current--;
         return parseTensorLiteral();
     }
 
@@ -459,21 +510,21 @@ std::unique_ptr<Expr> Parser::parsePrimary() {
 
 std::unique_ptr<Expr> Parser::parseTensorLiteral() {
     std::vector<std::vector<std::unique_ptr<Expr>>> rows;
-    consume(TokenKind::LeftBracket);  // outer [
+    consume(TokenKind::LeftBracket);
 
     while (!check(TokenKind::RightBracket) && !isAtEnd()) {
-        consume(TokenKind::LeftBracket);  // inner [
+        consume(TokenKind::LeftBracket);
         std::vector<std::unique_ptr<Expr>> row;
         if (!check(TokenKind::RightBracket)) {
             do {
                 row.push_back(parseExpression());
             } while (match(TokenKind::Comma));
         }
-        consume(TokenKind::RightBracket);  // inner ]
+        consume(TokenKind::RightBracket);
         rows.push_back(std::move(row));
         if (!match(TokenKind::Comma)) break;
     }
 
-    consume(TokenKind::RightBracket);  // outer ]
+    consume(TokenKind::RightBracket);
     return std::make_unique<TensorLiteralExpr>(std::move(rows));
 }

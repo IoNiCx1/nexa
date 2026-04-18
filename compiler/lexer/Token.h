@@ -48,6 +48,13 @@ enum class TokenKind {
     Constructor,
     Self,
 
+    // ── File handling ──────────────────────────
+    Imp,        // imp
+    OpenFile,   // open.file  (lexed as a single token)
+    Write,      // write
+    Append,     // append
+    // ───────────────────────────────────────────
+
     // Punctuation
     LeftParen,
     RightParen,
@@ -57,8 +64,6 @@ enum class TokenKind {
     RightBracket,
     Comma,
     Semicolon,
-
-    // struct field initializers
     Colon,
 
     END,
@@ -66,12 +71,12 @@ enum class TokenKind {
 };
 
 struct Token {
-    TokenKind kind;
+    TokenKind   kind;
     std::string lexeme;
-    int line;
-    int column;
+    int         line;
+    int         column;
 };
 
-}
+} // namespace nexa
 
 #endif

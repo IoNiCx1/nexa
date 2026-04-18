@@ -29,7 +29,7 @@ void CodeGen::generate(Program& program) {
         printfArgs, 
         true  // varargs
     );
-<<<<<<< Updated upstream
+
     llvm::FunctionCallee printfFunc = llvm.module->getOrInsertFunction("printf", printfType);
     
     // Default exit value if no variables are declared
@@ -93,41 +93,46 @@ void CodeGen::generate(Program& program) {
         { llvm::PointerType::get(context, 0) },
         false
     );
+    aiPrintTensorFunc = llvm::Function::Create(
+        printTensorType, llvm::Function::ExternalLinkage, "ai_print", module.get()
+    );
 
     // ai_zeros(int rows, int cols) -> Tensor*
     auto zerosType = llvm::FunctionType::get(
-            llvm::PointerType::get(context, 0),
-            { llvm::Type::getInt32Ty(context), llvm::Type::getInt32Ty(context) },
-            false
+        llvm::PointerType::get(context, 0),
+        { llvm::Type::getInt32Ty(context), llvm::Type::getInt32Ty(context) },
+        false
     );
     llvm::Function::Create(zerosType, llvm::Function::ExternalLinkage, "ai_zeros", module.get());
 
     // ai_sum(Tensor*) -> float
     auto sumType = llvm::FunctionType::get(
-            llvm::Type::getFloatTy(context),
-            { llvm::PointerType::get(context, 0) },
-            false
+        llvm::Type::getFloatTy(context),
+        { llvm::PointerType::get(context, 0) },
+        false
     );
     llvm::Function::Create(sumType, llvm::Function::ExternalLinkage, "ai_sum", module.get());
 
     // ai_reshape(Tensor*, int r, int c) -> Tensor*
     auto reshapeType = llvm::FunctionType::get(
-            llvm::PointerType::get(context, 0),
-            { llvm::PointerType::get(context, 0), llvm::Type::getInt32Ty(context), 
-                llvm::Type::getInt32Ty(context) },
-            false
+        llvm::PointerType::get(context, 0),
+        { llvm::PointerType::get(context, 0), llvm::Type::getInt32Ty(context),
+          llvm::Type::getInt32Ty(context) },
+        false
     );
     llvm::Function::Create(reshapeType, llvm::Function::ExternalLinkage, "ai_reshape", module.get());
 
+    // ai_mean / ai_max / ai_min (Tensor*) -> float
     auto tensorToFloatType = llvm::FunctionType::get(
         llvm::Type::getFloatTy(context),
         { llvm::PointerType::get(context, 0) },
         false
     );
-    llvm::Function::Create(tensorToFloatType, llvm::Function::ExternalLinkage, "ai_mean", module.get());
-    llvm::Function::Create(tensorToFloatType, llvm::Function::ExternalLinkage, "ai_max", module.get());
-    llvm::Function::Create(tensorToFloatType, llvm::Function::ExternalLinkage, "ai_min", module.get());
+    llvm::Function::Create(tensorToFloatType, llvm::Function::ExternalLinkage, "ai_mean",  module.get());
+    llvm::Function::Create(tensorToFloatType, llvm::Function::ExternalLinkage, "ai_max",   module.get());
+    llvm::Function::Create(tensorToFloatType, llvm::Function::ExternalLinkage, "ai_min",   module.get());
 
+    // ai_shape(Tensor*) -> ptr
     auto shapeType = llvm::FunctionType::get(
         llvm::PointerType::get(context, 0),
         { llvm::PointerType::get(context, 0) },
@@ -135,9 +140,32 @@ void CodeGen::generate(Program& program) {
     );
     llvm::Function::Create(shapeType, llvm::Function::ExternalLinkage, "ai_shape", module.get());
 
-    aiPrintTensorFunc = llvm::Function::Create(
-        printTensorType, llvm::Function::ExternalLinkage, "ai_print", module.get()
-    );
+    // ── File runtime ──────────────────────────
+    declareFileRuntime();
+}
+
+// ── File runtime declarations ─────────────────────────────────────────────────
+
+void CodeGen::declareFileRuntime() {
+    auto* ptrTy  = llvm::PointerType::get(context, 0);
+    auto* voidTy = llvm::Type::getVoidTy(context);
+    auto* i32Ty  = llvm::Type::getInt32Ty(context);
+
+    // char* nexa_file_read(char* path)
+    module->getOrInsertFunction("nexa_file_read",
+        llvm::FunctionType::get(ptrTy, {ptrTy}, false));
+
+    // void nexa_file_write(char* path, char* content)
+    module->getOrInsertFunction("nexa_file_write",
+        llvm::FunctionType::get(voidTy, {ptrTy, ptrTy}, false));
+
+    // void nexa_file_append(char* path, char* content)
+    module->getOrInsertFunction("nexa_file_append",
+        llvm::FunctionType::get(voidTy, {ptrTy, ptrTy}, false));
+
+    // int nexa_file_exists(char* path)
+    module->getOrInsertFunction("nexa_file_exists",
+        llvm::FunctionType::get(i32Ty, {ptrTy}, false));
 }
 
 llvm::Module* CodeGen::getModule() {
@@ -150,115 +178,255 @@ llvm::Module* CodeGen::getModule() {
 
 llvm::Type* CodeGen::getLLVMType(Type* type)
 {
-    // FIX 2: null type guard — SemanticAnalyzer may leave inferredType null
     if (!type) {
         std::cerr << "[CodeGen] WARNING: getLLVMType called with null type, defaulting to i32\n";
         return llvm::Type::getInt32Ty(context);
->>>>>>> Stashed changes
     }
-    
-    // 4. Finish the function with a 'ret i32' instead of 'ret void'
-    llvm.builder->CreateRet(lastValue);
-    
-    // Optional: Verify the generated code is valid
-    llvm::verifyFunction(*mainFunc);
+
+    if (type->isInt())    return llvm::Type::getInt32Ty(context);
+    if (type->isDouble()) return llvm::Type::getDoubleTy(context);
+    if (type->isBool())   return llvm::Type::getInt1Ty(context);
+    if (type->isString()) return llvm::PointerType::get(context, 0);
+    if (type->isTensor()) return llvm::PointerType::get(context, 0);
+    if (type->isArray())  return llvm::PointerType::get(llvm::Type::getInt32Ty(context), 0);
+    if (type->isStruct()) return llvm::PointerType::get(context, 0);
+
+    return llvm::Type::getVoidTy(context);
 }
 
-// NEW: Generate code for print statement
-void CodeGen::genPrintStmt(PrintStmt& stmt, llvm::FunctionCallee& printfFunc) {
-    llvm::Value* val = genExpression(*stmt.expression);
-    
-    if (!val) {
-        throw std::runtime_error("Failed to generate expression for print statement");
+// =============================
+// Program Generation
+// =============================
+
+void CodeGen::generate(Program& program)
+{
+    // Forward-declare user functions and structs first
+    for (auto& stmt : program.statements)
+        if (dynamic_cast<FunctionDecl*>(stmt.get()) ||
+            dynamic_cast<StructDecl*>(stmt.get()))
+            generateStmt(stmt.get());
+
+    // Build main()
+    auto mainType = llvm::FunctionType::get(llvm::Type::getInt32Ty(context), false);
+    auto mainFunc = llvm::Function::Create(
+        mainType, llvm::Function::ExternalLinkage, "main", module.get()
+    );
+    auto entry = llvm::BasicBlock::Create(context, "entry", mainFunc);
+    builder.SetInsertPoint(entry);
+
+    for (auto& stmt : program.statements)
+        if (!dynamic_cast<FunctionDecl*>(stmt.get()) &&
+            !dynamic_cast<StructDecl*>(stmt.get()))
+            generateStmt(stmt.get());
+
+    if (!builder.GetInsertBlock()->getTerminator())
+        builder.CreateRet(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0));
+
+    std::string errStr;
+    llvm::raw_string_ostream errStream(errStr);
+    if (llvm::verifyFunction(*mainFunc, &errStream)) {
+        errStream.flush();
+        std::cerr << "[CodeGen] main() verification failed:\n" << errStr << "\n";
+        mainFunc->print(llvm::errs());
     }
-    
-    llvm::Value* formatStr = nullptr;
-    
-    // Determine the correct format string based on the value type
-    llvm::Type* valType = val->getType();
-    
-    if (valType->isIntegerTy(32)) {
-        // Integer: use "%d\n"
-        formatStr = llvm.builder->CreateGlobalStringPtr("%d\n");
-    }
-    else if (valType->isFloatTy()) {
-        // Float: use "%f\n" (printf needs double, so we need to extend)
-        val = llvm.builder->CreateFPExt(val, llvm::Type::getDoubleTy(*llvm.context));
-        formatStr = llvm.builder->CreateGlobalStringPtr("%f\n");
-    }
-    else if (valType->isIntegerTy(8)) {
-        // Char: use "%c\n"
-        formatStr = llvm.builder->CreateGlobalStringPtr("%c\n");
-    }
-    else if (valType->isIntegerTy(1)) {
-        // Bool: convert to int and use "%d\n"
-        val = llvm.builder->CreateZExt(val, llvm::Type::getInt32Ty(*llvm.context));
-        formatStr = llvm.builder->CreateGlobalStringPtr("%d\n");
-    }
-    else if (valType->isPointerTy()) {
-        // String: use "%s\n"
-        formatStr = llvm.builder->CreateGlobalStringPtr("%s\n");
-    }
-    else {
-        throw std::runtime_error("Unsupported type for print statement");
-    }
-    
-    // Create the printf call
-    std::vector<llvm::Value*> args = { formatStr, val };
-    llvm.builder->CreateCall(printfFunc, args);
 }
 
-void CodeGen::genVarDecl(VarDecl& decl) {
-    llvm::Type* type = toLLVMType(decl.type);
-    
-    // Create 'alloca' on the stack
-    llvm::Value* alloca = llvm.builder->CreateAlloca(type, nullptr, decl.name);
-    
-    // Store the initial value if it exists
-    if (decl.initializer) {
-        llvm::Value* initVal = genExpression(*decl.initializer);
-        if (initVal) {
-            llvm.builder->CreateStore(initVal, alloca);
+// =============================
+// Statement Generation
+// =============================
+
+void CodeGen::generateStmt(Stmt* stmt)
+{
+    if (!stmt) return;
+
+    // ── ImpStmt: imp open.file() ──────────────
+    if (dynamic_cast<ImpStmt*>(stmt)) {
+        fileModuleImported = true;
+        return;
+    }
+
+    // ── FileStmt: open.file(...) as statement ──
+    if (auto fs = dynamic_cast<FileStmt*>(stmt)) {
+        generateFileExpr(fs->expr.get());
+        return;
+    }
+
+    // ── Struct Declaration ────────────────────
+    if (auto sd = dynamic_cast<StructDecl*>(stmt)) {
+        std::vector<llvm::Type*> fieldTypes;
+        std::vector<std::pair<std::string, int>> fieldMap;
+        int idx = 0;
+        for (auto& [name, type] : sd->fields) {
+            fieldTypes.push_back(getLLVMType(type));
+            fieldMap.push_back({name, idx++});
         }
-    }
-    
-    // Store the variable in the symbol table for later reference
-    namedValues[decl.name] = alloca;
-}
+        auto* st = llvm::StructType::create(context, fieldTypes, sd->name);
+        structTypes[sd->name]  = st;
+        structFields[sd->name] = fieldMap;
 
-llvm::Type* CodeGen::toLLVMType(const TypeSpec& type) {
-    switch (type.kind) {
-        case TypeKind::Int:   return llvm::Type::getInt32Ty(*llvm.context);
-        case TypeKind::Float: return llvm::Type::getFloatTy(*llvm.context);
-        case TypeKind::Void:  return llvm::Type::getVoidTy(*llvm.context);
-        default: throw std::runtime_error("Unknown type for LLVM lowering");
-    }
-}
+        // Generate constructor if present
+        if (sd->constructor) {
+            std::vector<llvm::Type*> paramTypes = { llvm::PointerType::get(context, 0) };
+            for (auto& [pname, ptype] : sd->constructor->params)
+                paramTypes.push_back(getLLVMType(ptype));
 
-llvm::Value* CodeGen::genExpression(Expr& expr) {
-    // Integer literals
-    if (auto* lit = dynamic_cast<IntegerLiteral*>(&expr)) {
-        return llvm::ConstantInt::get(*llvm.context, llvm::APInt(32, lit->value, true));
-    }
-    // Float literals
-    else if (auto* lit = dynamic_cast<FloatLiteral*>(&expr)) {
-        return llvm::ConstantFP::get(*llvm.context, llvm::APFloat(lit->value));
-    }
-    // String literals
-    else if (auto* lit = dynamic_cast<StringLiteral*>(&expr)) {
-        return llvm.builder->CreateGlobalStringPtr(lit->value);
-    }
-    // Char literals
-    else if (auto* lit = dynamic_cast<CharLiteral*>(&expr)) {
-        return llvm::ConstantInt::get(*llvm.context, llvm::APInt(8, lit->value, false));
-    }
-<<<<<<< Updated upstream
-    // Bool literals
-    else if (auto* lit = dynamic_cast<BoolLiteral*>(&expr)) {
-        return llvm::ConstantInt::get(*llvm.context, llvm::APInt(1, lit->value ? 1 : 0, false));
-=======
+            auto* ctorType = llvm::FunctionType::get(
+                llvm::Type::getVoidTy(context), paramTypes, false);
+            auto* ctorFunc = llvm::Function::Create(
+                ctorType, llvm::Function::ExternalLinkage,
+                sd->name + "__ctor", module.get());
 
-    // ── Print ─────────────────────────────────────────────────
+            auto* block    = llvm::BasicBlock::Create(context, "entry", ctorFunc);
+            auto* oldBlock = builder.GetInsertBlock();
+            builder.SetInsertPoint(block);
+
+            auto oldValues = namedValues;
+            namedValues.clear();
+
+            // 'self' is the first argument
+            auto argIt = ctorFunc->arg_begin();
+            llvm::Value* selfPtr = &*argIt++;
+            namedValues["self"] = selfPtr;
+
+            int pi = 0;
+            for (; argIt != ctorFunc->arg_end(); ++argIt, ++pi) {
+                auto& [pname, ptype] = sd->constructor->params[pi];
+                auto* alloca = builder.CreateAlloca(argIt->getType(), nullptr, pname);
+                builder.CreateStore(&*argIt, alloca);
+                namedValues[pname] = alloca;
+            }
+
+            for (auto& s : sd->constructor->body)
+                generateStmt(s.get());
+
+            if (!builder.GetInsertBlock()->getTerminator())
+                builder.CreateRetVoid();
+
+            namedValues = oldValues;
+            if (oldBlock) builder.SetInsertPoint(oldBlock);
+        }
+        return;
+    }
+
+    // ── Function Declaration ──────────────────
+    if (auto fn = dynamic_cast<FunctionDecl*>(stmt)) {
+        std::vector<llvm::Type*> paramTypes;
+        for (auto& p : fn->params)
+            paramTypes.push_back(getLLVMType(p.second));
+
+        auto funcType = llvm::FunctionType::get(getLLVMType(fn->returnType), paramTypes, false);
+        auto function = llvm::Function::Create(
+            funcType, llvm::Function::ExternalLinkage, fn->name, module.get()
+        );
+
+        auto block     = llvm::BasicBlock::Create(context, "entry", function);
+        auto* oldBlock = builder.GetInsertBlock();
+        builder.SetInsertPoint(block);
+
+        auto oldValues = namedValues;
+        namedValues.clear();
+
+        int idx = 0;
+        for (auto& arg : function->args()) {
+            auto paramName = fn->params[idx++].first;
+            auto alloca    = builder.CreateAlloca(arg.getType(), nullptr, paramName);
+            builder.CreateStore(&arg, alloca);
+            namedValues[paramName] = alloca;
+        }
+
+        for (auto& s : fn->body)
+            generateStmt(s.get());
+
+        if (!builder.GetInsertBlock()->getTerminator()) {
+            if (fn->returnType && fn->returnType->isDouble())
+                builder.CreateRet(llvm::ConstantFP::get(context, llvm::APFloat(0.0)));
+            else if (fn->returnType && fn->returnType->isInt())
+                builder.CreateRet(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0));
+            else
+                builder.CreateRetVoid();
+        }
+
+        namedValues = oldValues;
+        if (oldBlock) builder.SetInsertPoint(oldBlock);
+        return;
+    }
+
+    // ── Return ────────────────────────────────
+    if (auto ret = dynamic_cast<ReturnStmt*>(stmt)) {
+        auto val = generateExpr(ret->value.get());
+        if (val) builder.CreateRet(val);
+        else     builder.CreateRetVoid();
+        return;
+    }
+
+    // ── Variable Declaration ──────────────────
+    if (auto var = dynamic_cast<VarDeclStmt*>(stmt)) {
+        auto initVal = generateExpr(var->initializer.get());
+        if (!initVal) {
+            std::cerr << "[CodeGen] ERROR: initializer for '" << var->name << "' produced null\n";
+            return;
+        }
+        auto alloca = builder.CreateAlloca(getLLVMType(var->declaredType), nullptr, var->name);
+        builder.CreateStore(initVal, alloca);
+        namedValues[var->name] = alloca;
+        return;
+    }
+
+    // ── Assignment ────────────────────────────
+    if (auto assign = dynamic_cast<AssignmentStmt*>(stmt)) {
+        auto value = generateExpr(assign->value.get());
+        if (!value) { std::cerr << "[CodeGen] ERROR: assignment RHS is null\n"; return; }
+
+        if (auto var = dynamic_cast<VariableExpr*>(assign->target.get())) {
+            auto it = namedValues.find(var->name);
+            if (it == namedValues.end()) {
+                std::cerr << "[CodeGen] ERROR: assignment to undeclared variable '"
+                          << var->name << "'\n";
+                return;
+            }
+            builder.CreateStore(value, it->second);
+        }
+        return;
+    }
+
+    // ── Self Assignment: self.field = value ───
+    if (auto sa = dynamic_cast<SelfAssignmentStmt*>(stmt)) {
+        auto selfIt = namedValues.find("self");
+        if (selfIt == namedValues.end()) {
+            std::cerr << "[CodeGen] ERROR: self not in scope\n"; return;
+        }
+        llvm::Value* selfPtr = selfIt->second;
+
+        // Find which struct we're in via the current function name
+        std::string structName;
+        if (auto* fn = builder.GetInsertBlock()->getParent()) {
+            std::string fname = fn->getName().str();
+            auto pos = fname.find("__ctor");
+            if (pos != std::string::npos) structName = fname.substr(0, pos);
+        }
+
+        auto sit = structTypes.find(structName);
+        if (sit == structTypes.end()) {
+            std::cerr << "[CodeGen] ERROR: cannot resolve struct for self assignment\n"; return;
+        }
+        auto* st       = sit->second;
+        auto& fieldIdx = structFields[structName];
+
+        int idx = -1;
+        for (auto& fi : fieldIdx)
+            if (fi.first == sa->field) { idx = fi.second; break; }
+        if (idx == -1) {
+            std::cerr << "[CodeGen] ERROR: unknown field '" << sa->field << "'\n"; return;
+        }
+
+        auto val = generateExpr(sa->value.get());
+        if (!val) return;
+        auto ptr = builder.CreateStructGEP(st, selfPtr, idx, sa->field + "_ptr");
+        builder.CreateStore(val, ptr);
+        return;
+    }
+
+    // ── Print ─────────────────────────────────
     if (auto print = dynamic_cast<PrintStmt*>(stmt)) {
         auto val = generateExpr(print->expression.get());
         if (!val) { std::cerr << "[CodeGen] ERROR: print expression is null\n"; return; }
@@ -266,7 +434,6 @@ llvm::Value* CodeGen::genExpression(Expr& expr) {
 
         auto* type = print->expression->inferredType;
 
-        // Derive format from actual IR type when inferredType is missing
         const char* fmt = nullptr;
         bool needZExt   = false;
 
@@ -277,12 +444,11 @@ llvm::Value* CodeGen::genExpression(Expr& expr) {
             else if (type->isBool())   { fmt = "%d\n"; needZExt = true; }
             else                       fmt = "%d\n";
         } else {
-            // Fallback: inspect the LLVM IR type directly
             auto* irTy = val->getType();
-            if      (irTy->isDoubleTy())  fmt = "%.6g\n";
-            else if (irTy->isPointerTy()) fmt = "%s\n";
-            else if (irTy->isIntegerTy(1)){ fmt = "%d\n"; needZExt = true; }
-            else                          fmt = "%d\n";
+            if      (irTy->isDoubleTy())   fmt = "%.6g\n";
+            else if (irTy->isPointerTy())  fmt = "%s\n";
+            else if (irTy->isIntegerTy(1)) { fmt = "%d\n"; needZExt = true; }
+            else                           fmt = "%d\n";
         }
 
         if (needZExt)
@@ -291,28 +457,136 @@ llvm::Value* CodeGen::genExpression(Expr& expr) {
         auto fmtVal = builder.CreateGlobalStringPtr(fmt);
         builder.CreateCall(printfFunc, {fmtVal, val});
         return;
->>>>>>> Stashed changes
     }
-    // Variable references
-    // Variable references
-else if (auto* varRef = dynamic_cast<VarRef*>(&expr)) {
-    auto it = namedValues.find(varRef->name);
-    if (it == namedValues.end()) {
-        throw std::runtime_error("Undefined variable: " + varRef->name);
+
+    // ── Loop ──────────────────────────────────
+    if (auto loop = dynamic_cast<LoopStmt*>(stmt)) {
+        auto countVal = generateExpr(loop->count.get());
+        if (!countVal) { std::cerr << "[CodeGen] ERROR: loop count is null\n"; return; }
+
+        auto* function = builder.GetInsertBlock()->getParent();
+
+        llvm::Value* prevIterVal = nullptr;
+        {
+            auto prevIt = namedValues.find(loop->iterator);
+            if (prevIt != namedValues.end()) prevIterVal = prevIt->second;
+        }
+
+        auto loopVar = builder.CreateAlloca(llvm::Type::getInt32Ty(context), nullptr, loop->iterator);
+        builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0), loopVar);
+        namedValues[loop->iterator] = loopVar;
+
+        auto condBlock = llvm::BasicBlock::Create(context, "loop_cond", function);
+        auto bodyBlock = llvm::BasicBlock::Create(context, "loop_body", function);
+        auto endBlock  = llvm::BasicBlock::Create(context, "loop_end",  function);
+
+        builder.CreateBr(condBlock);
+        builder.SetInsertPoint(condBlock);
+
+        auto current = builder.CreateLoad(llvm::Type::getInt32Ty(context), loopVar, "loop_i");
+        auto cond    = builder.CreateICmpSLT(current, countVal, "loop_cond");
+        builder.CreateCondBr(cond, bodyBlock, endBlock);
+
+        builder.SetInsertPoint(bodyBlock);
+        for (auto& s : loop->body) generateStmt(s.get());
+
+        if (!builder.GetInsertBlock()->getTerminator()) {
+            auto next = builder.CreateAdd(
+                builder.CreateLoad(llvm::Type::getInt32Ty(context), loopVar),
+                llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 1)
+            );
+            builder.CreateStore(next, loopVar);
+            builder.CreateBr(condBlock);
+        }
+
+        builder.SetInsertPoint(endBlock);
+
+        if (prevIterVal) namedValues[loop->iterator] = prevIterVal;
+        else             namedValues.erase(loop->iterator);
+        return;
     }
-    // Load the value from the stack
-    llvm::AllocaInst* alloca = llvm::cast<llvm::AllocaInst>(it->second);
-    return llvm.builder->CreateLoad(
-        alloca->getAllocatedType(),
-        it->second,
-        varRef->name
-    );
+
+    // ── If Statement ──────────────────────────
+    if (auto ifStmt = dynamic_cast<IfStmt*>(stmt)) {
+        auto condVal = generateExpr(ifStmt->condition.get());
+        if (!condVal) { std::cerr << "[CodeGen] ERROR: if condition is null\n"; return; }
+
+        if (!condVal->getType()->isIntegerTy(1))
+            condVal = builder.CreateICmpNE(
+                condVal, llvm::ConstantInt::get(condVal->getType(), 0), "bool_cond");
+
+        auto* function  = builder.GetInsertBlock()->getParent();
+        auto thenBlock  = llvm::BasicBlock::Create(context, "then",   function);
+        auto elseBlock  = llvm::BasicBlock::Create(context, "else",   function);
+        auto mergeBlock = llvm::BasicBlock::Create(context, "ifcont", function);
+
+        builder.CreateCondBr(condVal, thenBlock, elseBlock);
+
+        builder.SetInsertPoint(thenBlock);
+        for (auto& s : ifStmt->thenBranch) generateStmt(s.get());
+        if (!builder.GetInsertBlock()->getTerminator()) builder.CreateBr(mergeBlock);
+
+        builder.SetInsertPoint(elseBlock);
+        for (auto& s : ifStmt->elseBranch) generateStmt(s.get());
+        if (!builder.GetInsertBlock()->getTerminator()) builder.CreateBr(mergeBlock);
+
+        builder.SetInsertPoint(mergeBlock);
+        return;
+    }
+
+    std::cerr << "[CodeGen] WARNING: unhandled statement type: "
+              << typeid(*stmt).name() << "\n";
 }
-    
-    return nullptr; 
+
+// =============================
+// File Expression Generation
+// =============================
+
+llvm::Value* CodeGen::generateFileExpr(FileExpr* fe) {
+    if (!fe) return nullptr;
+
+    // ── Compile-time read ─────────────────────
+    if (fe->compileTime && fe->mode == FileMode::Read) {
+        if (auto* strLit = dynamic_cast<StringLiteral*>(fe->path.get())) {
+            std::ifstream f(strLit->value);
+            if (f.is_open()) {
+                std::string contents((std::istreambuf_iterator<char>(f)),
+                                      std::istreambuf_iterator<char>());
+                return builder.CreateGlobalStringPtr(contents, "ct_file_data");
+            }
+            std::cerr << "[CodeGen] compile-time warning: cannot open '"
+                      << strLit->value << "' — falling back to runtime read\n";
+        }
+    }
+
+    llvm::Value* pathVal = generateExpr(fe->path.get());
+    if (!pathVal) return nullptr;
+
+    switch (fe->mode) {
+        case FileMode::Read: {
+            auto* fn = module->getFunction("nexa_file_read");
+            if (!fn) { std::cerr << "[CodeGen] error: nexa_file_read not declared\n"; return nullptr; }
+            return builder.CreateCall(fn, {pathVal}, "file_data");
+        }
+        case FileMode::Write: {
+            auto* fn = module->getFunction("nexa_file_write");
+            if (!fn) { std::cerr << "[CodeGen] error: nexa_file_write not declared\n"; return nullptr; }
+            auto* content = generateExpr(fe->content.get());
+            if (!content) return nullptr;
+            builder.CreateCall(fn, {pathVal, content});
+            return nullptr;
+        }
+        case FileMode::Append: {
+            auto* fn = module->getFunction("nexa_file_append");
+            if (!fn) { std::cerr << "[CodeGen] error: nexa_file_append not declared\n"; return nullptr; }
+            auto* content = generateExpr(fe->content.get());
+            if (!content) return nullptr;
+            builder.CreateCall(fn, {pathVal, content});
+            return nullptr;
+        }
+    }
+    return nullptr;
 }
-<<<<<<< Updated upstream
-=======
 
 // =============================
 // Expression Generation
@@ -320,7 +594,11 @@ else if (auto* varRef = dynamic_cast<VarRef*>(&expr)) {
 
 llvm::Value* CodeGen::generateExpr(Expr* expr)
 {
-    if (!expr) return nullptr;   // FIX 7: every caller must null-check the return
+    if (!expr) return nullptr;
+
+    // ── File expression ───────────────────────
+    if (auto fe = dynamic_cast<FileExpr*>(expr))
+        return generateFileExpr(fe);
 
     // ── Literals ──────────────────────────────
     if (auto intLit = dynamic_cast<IntegerLiteral*>(expr))
@@ -344,26 +622,16 @@ llvm::Value* CodeGen::generateExpr(Expr* expr)
         auto arr = generateExpr(idxExpr->array.get());
         auto idx = generateExpr(idxExpr->index.get());
         if (!arr || !idx) return nullptr;
-
-
-        // arr must be a pointer for GEP. If the array variable was loaded
-        // as an integer (type mismatch), inttoptr it so we get valid IR.
-        // In correct operation arr is already ptr — this is a safety net.
-        if (!arr->getType()->isPointerTy()) {
-            std::cerr << "[CodeGen] WARNING: array base is not a pointer — casting via inttoptr\n";
+        if (!arr->getType()->isPointerTy())
             arr = builder.CreateIntToPtr(arr, llvm::PointerType::get(context, 0), "arr_ptr_cast");
-        }
-
-        auto ptr = builder.CreateGEP(
-            llvm::Type::getInt32Ty(context), arr, idx, "elem_ptr"
-        );
+        auto ptr = builder.CreateGEP(llvm::Type::getInt32Ty(context), arr, idx, "elem_ptr");
         return builder.CreateLoad(llvm::Type::getInt32Ty(context), ptr, "elem");
     }
 
     // ── Array Literal ─────────────────────────
     if (auto arrLit = dynamic_cast<ArrayLiteralExpr*>(expr)) {
-        int size    = (int)arrLit->elements.size();
-        auto arrTy  = llvm::ArrayType::get(llvm::Type::getInt32Ty(context), size);
+        int size   = (int)arrLit->elements.size();
+        auto arrTy = llvm::ArrayType::get(llvm::Type::getInt32Ty(context), size);
         auto alloca = builder.CreateAlloca(arrTy, nullptr, "array_tmp");
 
         for (int i = 0; i < size; ++i) {
@@ -373,7 +641,6 @@ llvm::Value* CodeGen::generateExpr(Expr* expr)
                 { builder.getInt32(0), builder.getInt32(i) }, "elem_ptr");
             builder.CreateStore(val, ptr);
         }
-        // Decay [N x i32]* → i32*
         return builder.CreateGEP(arrTy, alloca,
             { builder.getInt32(0), builder.getInt32(0) }, "arr_ptr");
     }
@@ -409,20 +676,15 @@ llvm::Value* CodeGen::generateExpr(Expr* expr)
         auto R = generateExpr(bin->right.get());
         if (!L || !R) return nullptr;
 
-        // Tensor matmul
         auto* lt = bin->left->inferredType;
         auto* rt = bin->right->inferredType;
         if (lt && rt && lt->isTensor() && rt->isTensor() && bin->op == "*")
             return builder.CreateCall(aiMatmulFunc, {L, R}, "matmul_tmp");
 
-        // FIX 8: promote int→double when sides are mixed so FAdd/FSub don't
-        // receive an i32 on one side and double on the other → verifier error
         bool lFP = L->getType()->isDoubleTy();
         bool rFP = R->getType()->isDoubleTy();
-        if (lFP && !rFP)
-            R = builder.CreateSIToFP(R, llvm::Type::getDoubleTy(context));
-        else if (!lFP && rFP)
-            L = builder.CreateSIToFP(L, llvm::Type::getDoubleTy(context));
+        if (lFP && !rFP) R = builder.CreateSIToFP(R, llvm::Type::getDoubleTy(context));
+        else if (!lFP && rFP) L = builder.CreateSIToFP(L, llvm::Type::getDoubleTy(context));
 
         bool isFP = L->getType()->isDoubleTy();
 
@@ -449,22 +711,17 @@ llvm::Value* CodeGen::generateExpr(Expr* expr)
             return nullptr;
         }
 
-        if (var->inferredType && var->inferredType->isStruct()) {
+        if (var->inferredType && var->inferredType->isStruct())
             return it->second;
-        }
 
-        // Arrays and strings are stored as ptr-to-ptr (alloca ptr).
-        // Loading them must yield a ptr, not i32.
-        // Use the alloca's allocated type to decide the load type so we
-        // never mismatch the stored value's actual IR type.
         llvm::Type* loadTy = nullptr;
-        if (auto* allocaInst = llvm::dyn_cast<llvm::AllocaInst>(it->second)) {
+        if (auto* allocaInst = llvm::dyn_cast<llvm::AllocaInst>(it->second))
             loadTy = allocaInst->getAllocatedType();
-        } else {
+        else
             loadTy = var->inferredType
                 ? getLLVMType(var->inferredType)
                 : llvm::Type::getInt32Ty(context);
-        }
+
         return builder.CreateLoad(loadTy, it->second, var->name);
     }
 
@@ -472,7 +729,7 @@ llvm::Value* CodeGen::generateExpr(Expr* expr)
     if (auto call = dynamic_cast<CallExpr*>(expr)) {
         std::string funcName = call->callee;
 
-        // Translation layer: Map Nexa names to Runtime (ai_) names
+        // Nexa → runtime name mapping
         if      (funcName == "zeros")   funcName = "ai_zeros";
         else if (funcName == "ones")    funcName = "ai_ones";
         else if (funcName == "sum")     funcName = "ai_sum";
@@ -482,7 +739,7 @@ llvm::Value* CodeGen::generateExpr(Expr* expr)
         else if (funcName == "reshape") funcName = "ai_reshape";
         else if (funcName == "shape")   funcName = "ai_shape";
 
-        auto* fn = module->getFunction(funcName); 
+        auto* fn = module->getFunction(funcName);
         if (!fn) {
             std::cerr << "[CodeGen] ERROR: unknown function '" << call->callee << "'\n";
             return nullptr;
@@ -497,7 +754,7 @@ llvm::Value* CodeGen::generateExpr(Expr* expr)
         return builder.CreateCall(fn, args, "calltmp");
     }
 
-    // ── Struct Literal ────────────────────────────────────────
+    // ── Struct Literal ────────────────────────
     if (auto sl = dynamic_cast<StructLiteralExpr*>(expr)) {
         auto it = structTypes.find(sl->structName);
         if (it == structTypes.end()) {
@@ -506,17 +763,13 @@ llvm::Value* CodeGen::generateExpr(Expr* expr)
         }
         auto* st     = it->second;
         auto* alloca = builder.CreateAlloca(st, nullptr, sl->structName + "_tmp");
-
         auto& fieldIdx = structFields[sl->structName];
 
         for (auto& f : sl->fields) {
             int idx = -1;
             for (auto& fi : fieldIdx)
                 if (fi.first == f.first) { idx = fi.second; break; }
-            if (idx == -1) {
-                std::cerr << "[CodeGen] ERROR: unknown field '" << f.first << "'\n";
-                continue;
-            }
+            if (idx == -1) { std::cerr << "[CodeGen] ERROR: unknown field '" << f.first << "'\n"; continue; }
             auto val = generateExpr(f.second.get());
             if (!val) continue;
             auto ptr = builder.CreateStructGEP(st, alloca, idx, f.first + "_ptr");
@@ -525,21 +778,19 @@ llvm::Value* CodeGen::generateExpr(Expr* expr)
         return alloca;
     }
 
-    // ── Member Access ─────────────────────────────────────────
+    // ── Member Access ─────────────────────────
     if (auto ma = dynamic_cast<MemberAccessExpr*>(expr)) {
         auto obj = generateExpr(ma->object.get());
         if (!obj) return nullptr;
 
         std::string structName;
-        if (ma->object->inferredType)
-            structName = ma->object->inferredType->structName;
+        if (ma->object->inferredType) structName = ma->object->inferredType->structName;
 
         auto sit = structTypes.find(structName);
         if (sit == structTypes.end()) {
             std::cerr << "[CodeGen] ERROR: cannot resolve struct type for member access\n";
             return nullptr;
         }
-
         auto* st       = sit->second;
         auto& fieldIdx = structFields[structName];
 
@@ -555,24 +806,19 @@ llvm::Value* CodeGen::generateExpr(Expr* expr)
         return builder.CreateLoad(st->getElementType(idx), ptr, ma->field);
     }
 
-    //----- Constructor Call Expression ----------------------
+    // ── Constructor Call ──────────────────────
     if (auto cc = dynamic_cast<ConstructorCallExpr*>(expr)) {
         auto* st = structTypes[cc->structName];
         if (!st) {
-            std::cerr << "[Codegen] ERROR: unkown struct '" << cc->structName << "'\n";
+            std::cerr << "[CodeGen] ERROR: unknown struct '" << cc->structName << "'\n";
             return nullptr;
         }
-
-        //Allocate struct on stack
-        auto* alloca = builder.CreateAlloca(st, nullptr, cc->structName + "_inst");
-
-        //Call constructor function if it exists
+        auto* alloca   = builder.CreateAlloca(st, nullptr, cc->structName + "_inst");
         auto* ctorFunc = module->getFunction(cc->structName + "__ctor");
         if (ctorFunc) {
-            std::vector<llvm::Value*> args;
-            args.push_back(alloca);
-            for (auto& arg :cc->arguments) {
-                auto val =generateExpr(arg.get());
+            std::vector<llvm::Value*> args = { alloca };
+            for (auto& arg : cc->arguments) {
+                auto val = generateExpr(arg.get());
                 if (!val) return nullptr;
                 args.push_back(val);
             }
@@ -581,7 +827,7 @@ llvm::Value* CodeGen::generateExpr(Expr* expr)
         return alloca;
     }
 
-    std::cerr<<"[CodeGen] ERROR: unhandled expression type: "<< typeid(*expr).name() << "\n";
+    std::cerr << "[CodeGen] ERROR: unhandled expression type: "
+              << typeid(*expr).name() << "\n";
     return nullptr;
 }
->>>>>>> Stashed changes
