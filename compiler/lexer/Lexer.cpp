@@ -109,7 +109,28 @@ Token Lexer::number() {
 Token Lexer::stringLiteral() {
     std::string lexeme;
     advance(); // opening "
-    while (peek() != '"' && peek() != '\0') lexeme += advance();
+    while (peek() != '"' && peek() != '\0') {
+        char c = advance();
+        if (c == '\\') {
+            // Process escape sequences
+            char next = advance();
+            switch (next) {
+                case 'n':  lexeme += '\n'; break;
+                case 't':  lexeme += '\t'; break;
+                case 'r':  lexeme += '\r'; break;
+                case '\\': lexeme += '\\'; break;
+                case '"':  lexeme += '"';  break;
+                case '0':  lexeme += '\0'; break;
+                default:
+                    // Unknown escape — keep both characters
+                    lexeme += '\\';
+                    lexeme += next;
+                    break;
+            }
+        } else {
+            lexeme += c;
+        }
+    }
     advance(); // closing "
     return makeToken(TokenKind::StringLiteral, lexeme);
 }

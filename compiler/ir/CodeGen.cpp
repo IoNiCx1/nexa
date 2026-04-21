@@ -119,8 +119,19 @@ CodeGen::CodeGen()
     );
     llvm::Function::Create(shapeType, llvm::Function::ExternalLinkage, "ai_shape", module.get());
 
+    // ai_get_value(Tensor*, int r, int c) -> float
+    auto getValType = llvm::FunctionType::get(
+        llvm::Type::getFloatTy(context),
+        { llvm::PointerType::get(context, 0),
+          llvm::Type::getInt32Ty(context),
+          llvm::Type::getInt32Ty(context) },
+        false
+    );
+    llvm::Function::Create(getValType, llvm::Function::ExternalLinkage, "ai_get_value", module.get());
+
     // ── File runtime ──────────────────────────
     declareFileRuntime();
+    declareCsvRuntime();
 }
 
 // ── File runtime declarations ─────────────────────────────────────────────────
@@ -145,6 +156,51 @@ void CodeGen::declareFileRuntime() {
     // int nexa_file_exists(char* path)
     module->getOrInsertFunction("nexa_file_exists",
         llvm::FunctionType::get(i32Ty, {ptrTy}, false));
+}
+
+// ── CSV runtime declarations ──────────────────────────────────────────────────
+
+void CodeGen::declareCsvRuntime() {
+    auto* ptrTy  = llvm::PointerType::get(context, 0);
+    auto* voidTy = llvm::Type::getVoidTy(context);
+    auto* i32Ty  = llvm::Type::getInt32Ty(context);
+    auto* f32Ty  = llvm::Type::getFloatTy(context);
+
+    // void* csv_read(char* path, int skip_header)
+    module->getOrInsertFunction("csv_read",
+        llvm::FunctionType::get(ptrTy, {ptrTy, i32Ty}, false));
+
+    // void csv_write(char* path, void* tensor)
+    module->getOrInsertFunction("csv_write",
+        llvm::FunctionType::get(voidTy, {ptrTy, ptrTy}, false));
+
+    // int csv_rows(void* tensor)
+    module->getOrInsertFunction("csv_rows",
+        llvm::FunctionType::get(i32Ty, {ptrTy}, false));
+
+    // int csv_cols(void* tensor)
+    module->getOrInsertFunction("csv_cols",
+        llvm::FunctionType::get(i32Ty, {ptrTy}, false));
+
+    // float csv_get(void* tensor, int row, int col)
+    module->getOrInsertFunction("csv_get",
+        llvm::FunctionType::get(f32Ty, {ptrTy, i32Ty, i32Ty}, false));
+
+    // void csv_set(void* tensor, int row, int col, float val)
+    module->getOrInsertFunction("csv_set",
+        llvm::FunctionType::get(voidTy, {ptrTy, i32Ty, i32Ty, f32Ty}, false));
+
+    // void* csv_get_row(void* tensor, int row)
+    module->getOrInsertFunction("csv_get_row",
+        llvm::FunctionType::get(ptrTy, {ptrTy, i32Ty}, false));
+
+    // void* csv_get_col(void* tensor, int col)
+    module->getOrInsertFunction("csv_get_col",
+        llvm::FunctionType::get(ptrTy, {ptrTy, i32Ty}, false));
+
+    // void* csv_slice_cols(void* tensor, int col_start, int col_end)
+    module->getOrInsertFunction("csv_slice_cols",
+        llvm::FunctionType::get(ptrTy, {ptrTy, i32Ty, i32Ty}, false));
 }
 
 llvm::Module* CodeGen::getModule() {
@@ -709,14 +765,25 @@ llvm::Value* CodeGen::generateExpr(Expr* expr)
         std::string funcName = call->callee;
 
         // Nexa → runtime name mapping
-        if      (funcName == "zeros")   funcName = "ai_zeros";
-        else if (funcName == "ones")    funcName = "ai_ones";
-        else if (funcName == "sum")     funcName = "ai_sum";
-        else if (funcName == "mean")    funcName = "ai_mean";
-        else if (funcName == "max")     funcName = "ai_max";
-        else if (funcName == "min")     funcName = "ai_min";
-        else if (funcName == "reshape") funcName = "ai_reshape";
-        else if (funcName == "shape")   funcName = "ai_shape";
+        if      (funcName == "zeros")      funcName = "ai_zeros";
+        else if (funcName == "ones")       funcName = "ai_ones";
+        else if (funcName == "sum")        funcName = "ai_sum";
+        else if (funcName == "mean")       funcName = "ai_mean";
+        else if (funcName == "max")        funcName = "ai_max";
+        else if (funcName == "min")        funcName = "ai_min";
+        else if (funcName == "reshape")    funcName = "ai_reshape";
+        else if (funcName == "shape")      funcName = "ai_shape";
+        else if (funcName == "get_value")  funcName = "ai_get_value";
+        // ── CSV functions ──────────────────────
+        else if (funcName == "read_csv")   funcName = "csv_read";
+        else if (funcName == "write_csv")  funcName = "csv_write";
+        else if (funcName == "csv_rows")   funcName = "csv_rows";
+        else if (funcName == "csv_cols")   funcName = "csv_cols";
+        else if (funcName == "csv_get")    funcName = "csv_get";
+        else if (funcName == "csv_set")    funcName = "csv_set";
+        else if (funcName == "csv_row")    funcName = "csv_get_row";
+        else if (funcName == "csv_col")    funcName = "csv_get_col";
+        else if (funcName == "csv_slice")  funcName = "csv_slice_cols";
 
         auto* fn = module->getFunction(funcName);
         if (!fn) {
@@ -730,7 +797,9 @@ llvm::Value* CodeGen::generateExpr(Expr* expr)
             if (!val) return nullptr;
             args.push_back(val);
         }
-        return builder.CreateCall(fn, args, "calltmp");
+        // Void-returning functions must NOT get a result name — LLVM verifier rejects it
+        bool isVoid = fn->getReturnType()->isVoidTy();
+        return builder.CreateCall(fn, args, isVoid ? "" : "calltmp");
     }
 
     // ── Struct Literal ────────────────────────

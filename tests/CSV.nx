@@ -1,0 +1,40 @@
+imp open.file();
+
+// ── Write a test CSV ──────────────────────────
+open.file("tests/data.csv", write, "1.0,2.0,3.0\n4.0,5.0,6.0\n7.0,8.0,9.0\n");
+
+// ── Read it back as a tensor ──────────────────
+tensor data = read_csv("tests/data.csv", 0);
+print(data);
+
+// ── Shape info ────────────────────────────────
+int rows = csv_rows(data);
+int cols = csv_cols(data);
+print(rows);
+print(cols);
+
+// ── Cell access ───────────────────────────────
+double val = csv_get(data, 1, 2);
+print(val);
+
+// ── Row / column slicing ──────────────────────
+tensor row0 = csv_row(data, 0);
+print(row0);
+
+tensor col1 = csv_col(data, 1);
+print(col1);
+
+// ── Feature / label split ─────────────────────
+tensor features = csv_slice(data, 0, 2);
+tensor labels   = csv_col(data, 2);
+print(features);
+print(labels);
+
+// ── Stats ─────────────────────────────────────
+double total = sum(data);
+double avg   = mean(data);
+print(total);
+print(avg);
+
+// ── Write result back ─────────────────────────
+write_csv("tests/output.csv", features);
