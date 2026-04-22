@@ -1,5 +1,6 @@
 #include "Parser.h"
 #include <iostream>
+#include <unordered_set>
 
 using namespace nexa;
 
@@ -430,8 +431,15 @@ std::unique_ptr<Expr> Parser::parsePrimary() {
     // ── Identifier: variable, function call, struct ──
     if (t.kind == TokenKind::Identifier) {
 
+        // Known ML/runtime functions that start with uppercase — treat as regular calls
+        static const std::unordered_set<std::string> runtimeFunctions = {
+            "LoRe", "LoRe2", "DTRee", "RFore"  // extend as you add more models
+        };
+
         // Constructor call: Name(args) where Name starts with uppercase
-        if (check(TokenKind::LeftParen) && isupper(t.lexeme[0])) {
+        // BUT skip known runtime functions
+        bool isRuntime = runtimeFunctions.count(t.lexeme) > 0;
+        if (!isRuntime && check(TokenKind::LeftParen) && isupper(t.lexeme[0])) {
             advance();
             std::vector<std::unique_ptr<Expr>> args;
             if (!check(TokenKind::RightParen)) {

@@ -207,6 +207,21 @@ void SemanticAnalyzer::checkExpr(Expr* expr) {
         if (fn == "write_csv") { expr->inferredType = &TYPE_VOID;   return; }
         if (fn == "csv_set")   { expr->inferredType = &TYPE_VOID;   return; }
 
+        // ML functions — return types
+        if (fn == "normalize")     { expr->inferredType = &TYPE_TENSOR; return; }
+        if (fn == "shuffle")       { expr->inferredType = &TYPE_TENSOR; return; }
+        if (fn == "train_split")   { expr->inferredType = &TYPE_TENSOR; return; }
+        if (fn == "test_split")    { expr->inferredType = &TYPE_TENSOR; return; }
+        if (fn == "hstack")        { expr->inferredType = &TYPE_TENSOR; return; }
+        if (fn == "LoRe")          { expr->inferredType = &TYPE_TENSOR; return; } // model as opaque tensor
+        if (fn == "fit")           { expr->inferredType = &TYPE_VOID;   return; }
+        if (fn == "predict")       { expr->inferredType = &TYPE_TENSOR; return; }
+        if (fn == "predict_proba") { expr->inferredType = &TYPE_TENSOR; return; }
+        if (fn == "accuracy")      { expr->inferredType = &TYPE_DOUBLE; return; }
+        if (fn == "confusion")     { expr->inferredType = &TYPE_TENSOR; return; }
+        if (fn == "weights")       { expr->inferredType = &TYPE_TENSOR; return; }
+        if (fn == "bias")          { expr->inferredType = &TYPE_DOUBLE; return; }
+
         // Tensor/AI functions
         if (fn == "zeros"   || fn == "ones"    || fn == "reshape" ||
             fn == "shape"   || fn == "matmul")

@@ -132,6 +132,7 @@ CodeGen::CodeGen()
     // ── File runtime ──────────────────────────
     declareFileRuntime();
     declareCsvRuntime();
+    declareMlRuntime();
 }
 
 // ── File runtime declarations ─────────────────────────────────────────────────
@@ -201,6 +202,67 @@ void CodeGen::declareCsvRuntime() {
     // void* csv_slice_cols(void* tensor, int col_start, int col_end)
     module->getOrInsertFunction("csv_slice_cols",
         llvm::FunctionType::get(ptrTy, {ptrTy, i32Ty, i32Ty}, false));
+}
+
+// ── ML runtime declarations ───────────────────────────────────────────────────
+
+void CodeGen::declareMlRuntime() {
+    auto* ptrTy  = llvm::PointerType::get(context, 0);
+    auto* voidTy = llvm::Type::getVoidTy(context);
+    auto* i32Ty  = llvm::Type::getInt32Ty(context);
+    auto* f32Ty  = llvm::Type::getFloatTy(context);
+
+    // void* ml_normalize(void* X)
+    module->getOrInsertFunction("ml_normalize",
+        llvm::FunctionType::get(ptrTy, {ptrTy}, false));
+
+    // void* ml_shuffle(void* X)
+    module->getOrInsertFunction("ml_shuffle",
+        llvm::FunctionType::get(ptrTy, {ptrTy}, false));
+
+    // void* ml_train_split(void* X, float ratio)
+    module->getOrInsertFunction("ml_train_split",
+        llvm::FunctionType::get(ptrTy, {ptrTy, f32Ty}, false));
+
+    // void* ml_test_split(void* X, float ratio)
+    module->getOrInsertFunction("ml_test_split",
+        llvm::FunctionType::get(ptrTy, {ptrTy, f32Ty}, false));
+
+    // void* ml_hstack(void* A, void* B)
+    module->getOrInsertFunction("ml_hstack",
+        llvm::FunctionType::get(ptrTy, {ptrTy, ptrTy}, false));
+
+    // void* lore_create(int max_iter, float lr)
+    module->getOrInsertFunction("lore_create",
+        llvm::FunctionType::get(ptrTy, {i32Ty, f32Ty}, false));
+
+    // void lore_fit(void* model, void* X, void* y)
+    module->getOrInsertFunction("lore_fit",
+        llvm::FunctionType::get(voidTy, {ptrTy, ptrTy, ptrTy}, false));
+
+    // void* lore_predict(void* model, void* X)
+    module->getOrInsertFunction("lore_predict",
+        llvm::FunctionType::get(ptrTy, {ptrTy, ptrTy}, false));
+
+    // void* lore_predict_proba(void* model, void* X)
+    module->getOrInsertFunction("lore_predict_proba",
+        llvm::FunctionType::get(ptrTy, {ptrTy, ptrTy}, false));
+
+    // float ml_accuracy(void* pred, void* labels)
+    module->getOrInsertFunction("ml_accuracy",
+        llvm::FunctionType::get(f32Ty, {ptrTy, ptrTy}, false));
+
+    // void* ml_confusion(void* pred, void* labels)
+    module->getOrInsertFunction("ml_confusion",
+        llvm::FunctionType::get(ptrTy, {ptrTy, ptrTy}, false));
+
+    // void* lore_weights(void* model)
+    module->getOrInsertFunction("lore_weights",
+        llvm::FunctionType::get(ptrTy, {ptrTy}, false));
+
+    // float lore_bias(void* model)
+    module->getOrInsertFunction("lore_bias",
+        llvm::FunctionType::get(f32Ty, {ptrTy}, false));
 }
 
 llvm::Module* CodeGen::getModule() {
@@ -784,6 +846,20 @@ llvm::Value* CodeGen::generateExpr(Expr* expr)
         else if (funcName == "csv_row")    funcName = "csv_get_row";
         else if (funcName == "csv_col")    funcName = "csv_get_col";
         else if (funcName == "csv_slice")  funcName = "csv_slice_cols";
+        // ── ML functions ───────────────────────
+        else if (funcName == "normalize")       funcName = "ml_normalize";
+        else if (funcName == "shuffle")         funcName = "ml_shuffle";
+        else if (funcName == "train_split")     funcName = "ml_train_split";
+        else if (funcName == "test_split")      funcName = "ml_test_split";
+        else if (funcName == "hstack")          funcName = "ml_hstack";
+        else if (funcName == "LoRe")            funcName = "lore_create";
+        else if (funcName == "fit")             funcName = "lore_fit";
+        else if (funcName == "predict")         funcName = "lore_predict";
+        else if (funcName == "predict_proba")   funcName = "lore_predict_proba";
+        else if (funcName == "accuracy")        funcName = "ml_accuracy";
+        else if (funcName == "confusion")       funcName = "ml_confusion";
+        else if (funcName == "weights")         funcName = "lore_weights";
+        else if (funcName == "bias")            funcName = "lore_bias";
 
         auto* fn = module->getFunction(funcName);
         if (!fn) {
@@ -792,9 +868,23 @@ llvm::Value* CodeGen::generateExpr(Expr* expr)
         }
 
         std::vector<llvm::Value*> args;
-        for (auto& arg : call->arguments) {
-            auto val = generateExpr(arg.get());
+        auto* fnType = fn->getFunctionType();
+        for (size_t i = 0; i < call->arguments.size(); ++i) {
+            auto val = generateExpr(call->arguments[i].get());
             if (!val) return nullptr;
+
+            // Auto-coerce argument types to match the function signature
+            if (i < fnType->getNumParams()) {
+                llvm::Type* expected = fnType->getParamType(i);
+                llvm::Type* actual   = val->getType();
+
+                if (expected->isFloatTy() && actual->isDoubleTy())
+                    val = builder.CreateFPTrunc(val, llvm::Type::getFloatTy(context), "d2f");
+                else if (expected->isDoubleTy() && actual->isFloatTy())
+                    val = builder.CreateFPExt(val, llvm::Type::getDoubleTy(context), "f2d");
+                else if (expected->isIntegerTy(32) && actual->isIntegerTy(1))
+                    val = builder.CreateZExt(val, llvm::Type::getInt32Ty(context), "b2i");
+            }
             args.push_back(val);
         }
         // Void-returning functions must NOT get a result name — LLVM verifier rejects it
