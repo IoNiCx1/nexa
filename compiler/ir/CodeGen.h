@@ -53,6 +53,8 @@ private:
     // ── Helpers ───────────────────────────────
     llvm::Type*  getLLVMType(Type* type);
     void         declareFileRuntime();
+    void         declareCsvRuntime();
+    void         declareMlRuntime();     // ← new
 
     // ── Code generation ───────────────────────
     llvm::Value* generateExpr(Expr* expr);
